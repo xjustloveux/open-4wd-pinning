@@ -19,6 +19,7 @@ export default defineConfig({
       'scripts/comment-hook-runner.test.mjs',
       'scripts/eslint-comment-quality.test.mjs',
       'scripts/prepare-graphify-release.test.mjs',
+      'scripts/run-graphify-release.test.mjs',
     ],
   },
 });

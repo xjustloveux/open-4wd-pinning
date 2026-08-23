@@ -94,7 +94,7 @@ deploy workflow 只接受營運者 fork 手動 opt-in，不是 CI、build 或 im
 ## 貢獻、安全與授權
 
 一般貢獻請使用 GitHub Issue／Pull Request；安全弱點請依
-[Open4WD Security Policy](https://github.com/xjustloveux/open-4wd/security/policy)
+[Open4WD Security Reporting](https://github.com/xjustloveux/open-4wd-specs/blob/master/%E8%B3%87%E5%AE%89%E8%A6%8F%E7%AF%84.md#101-reporting)
 私下回報，不要公開揭露細節。
 
 [MIT](LICENSE)

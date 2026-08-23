@@ -23,7 +23,7 @@
     "vendor:sync": "tsx scripts/vendor-sync.ts",
     "ledger:genesis": "tsx scripts/ledger-genesis.ts",
     "ledger:rebirth-proof": "tsx scripts/initial-checkpoint-proof-bundle.ts",
-    "test:scripts": "node --test scripts/comment-hook-runner.test.mjs scripts/eslint-comment-quality.test.mjs scripts/prepare-graphify-release.test.mjs",
+    "test:scripts": "node --test scripts/comment-hook-runner.test.mjs scripts/eslint-comment-quality.test.mjs scripts/prepare-graphify-release.test.mjs scripts/run-graphify-release.test.mjs",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "e2e": "vitest run --config vitest.e2e.config.ts",

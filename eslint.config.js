@@ -4,10 +4,10 @@ import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 import commentQualityRule from './scripts/eslint-comment-quality.mjs';
 
-// core/vendor/** 為逐字 vendored 檔（禁止手改，見 MANIFEST.json 的 hash 檢查），
-// 故排除在本 repo 的 lint 規則之外；vendored 檔本身的風格由上游負責。
+// core/vendor/** 為逐字同步的 Open4WD 原始碼，scripts/vendor/** 為逐字打包的第三方
+// browser 資產；兩者皆禁止手改，故排除在本 repo 的 lint 規則之外。
 export default tseslint.config(
-  { ignores: ['core/vendor/**'] },
+  { ignores: ['core/vendor/**', 'scripts/vendor/**'] },
   js.configs.recommended,
   tseslint.configs.recommended,
   tseslint.configs.stylistic,

@@ -16,3 +16,4 @@ docs/
 
 # graphify 產物含跨 repo 關聯與可提交的語意 cache；只排除格式化，不改版控／掃描邊界
 graphify-out/
+scripts/vendor/
