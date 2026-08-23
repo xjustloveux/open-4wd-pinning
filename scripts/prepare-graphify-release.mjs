@@ -158,7 +158,7 @@ export async function prepareGraphifyRelease({
   ]);
   await writeFile(join(output, 'graphify-site.zip'), siteZip);
   const manifest = {
-    schemaVersion: 2,
+    schemaVersion: 1,
     repository,
     sourceSha: normalizedSha,
     tag: `graphify-${normalizedSha.slice(0, 12)}`,
