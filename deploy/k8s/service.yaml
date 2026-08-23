@@ -1,0 +1,19 @@
+# 單一 ClusterIP Service，三個具名 port 對應同一個 pod 內三容器各自對外的埠。ingress.yaml
+# Ingress 只消費 api；libp2p-ws 的對外曝露方式見 ingress.yaml
+# 檔頭說明（標準 Ingress 資源無法跨 controller 可攜地表達原始 TCP passthrough）。
+apiVersion: v1
+kind: Service
+metadata:
+  name: open4wd-pinning
+  labels:
+    app: open4wd-pinning
+spec:
+  selector:
+    app: open4wd-pinning
+  ports:
+    - name: api
+      port: 8000
+      targetPort: api
+    - name: libp2p-ws
+      port: 4001
+      targetPort: libp2p-ws

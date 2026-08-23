@@ -1,0 +1,14 @@
+* text=auto eol=lf
+
+*.gif binary
+*.ico binary
+*.jpeg binary
+*.jpg binary
+*.png binary
+*.webp binary
+*.glb binary
+*.gltf binary
+*.ktx2 binary
+*.wasm binary
+*.woff binary
+*.woff2 binary

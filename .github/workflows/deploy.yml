@@ -1,0 +1,141 @@
+name: Deploy operator fork
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: operator-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # pnpm 版本只由 package.json 的 packageManager 釘定；action 不再另帶 version，
+      # 否則兩處不一致時 pnpm/action-setup 會以 Multiple versions of pnpm specified 直接中止。
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Fail closed on required settings
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+          CLUSTER_SECRET: ${{ secrets.CLUSTER_SECRET }}
+          IMAGE_OWNER: ${{ vars.IMAGE_OWNER }}
+          IMAGE_TAG: ${{ vars.IMAGE_TAG }}
+          LEDGER_DB_ADDRESS: ${{ vars.LEDGER_DB_ADDRESS }}
+          GENESIS_TIMESTAMP: ${{ vars.GENESIS_TIMESTAMP }}
+          GOVERNANCE_SIGNERS: ${{ vars.GOVERNANCE_SIGNERS }}
+          AUTHORIZED_SIGNERS: ${{ vars.AUTHORIZED_SIGNERS }}
+          DOMAIN: ${{ vars.DOMAIN }}
+          DMCA_ENABLE: ${{ vars.DMCA_ENABLE || 'false' }}
+          DMCA_ADMIN_TOKEN: ${{ secrets.DMCA_ADMIN_TOKEN }}
+        run: |
+          : "${KUBE_CONFIG:?}" "${CLUSTER_SECRET:?}" "${IMAGE_OWNER:?}" "${IMAGE_TAG:?}"
+          : "${LEDGER_DB_ADDRESS:?}" "${GENESIS_TIMESTAMP:?}" "${GOVERNANCE_SIGNERS:?}" "${AUTHORIZED_SIGNERS:?}" "${DOMAIN:?}"
+          if [ "$DMCA_ENABLE" = 'true' ]; then : "${DMCA_ADMIN_TOKEN:?}"; fi
+          if [ "${#CLUSTER_SECRET}" -lt 32 ]; then echo 'CLUSTER_SECRET must contain at least 32 characters' >&2; exit 1; fi
+
+      - name: Render manifests outside the checkout
+        env:
+          IMAGE_OWNER: ${{ vars.IMAGE_OWNER }}
+          IMAGE_TAG: ${{ vars.IMAGE_TAG }}
+          LEDGER_DB_ADDRESS: ${{ vars.LEDGER_DB_ADDRESS }}
+          GENESIS_TIMESTAMP: ${{ vars.GENESIS_TIMESTAMP }}
+          GOVERNANCE_SIGNERS: ${{ vars.GOVERNANCE_SIGNERS }}
+          AUTHORIZED_SIGNERS: ${{ vars.AUTHORIZED_SIGNERS }}
+          CORS_ALLOWED_ORIGINS: ${{ vars.CORS_ALLOWED_ORIGINS }}
+          DOMAIN: ${{ vars.DOMAIN }}
+          DMCA_ENABLE: ${{ vars.DMCA_ENABLE || 'false' }}
+        run: |
+          cp -R deploy/k8s "$RUNNER_TEMP/open4wd-pinning-k8s"
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+          from urllib.parse import urlsplit
+
+          def require(pattern, value, name):
+              if re.fullmatch(pattern, value) is None: raise SystemExit(f'invalid {name}')
+
+          require(r'[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})', os.environ['IMAGE_OWNER'], 'IMAGE_OWNER')
+          require(r'[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}', os.environ['IMAGE_TAG'], 'IMAGE_TAG')
+          require(r'/orbitdb/[A-Za-z0-9._/-]+', os.environ['LEDGER_DB_ADDRESS'], 'LEDGER_DB_ADDRESS')
+          require(r'[1-9][0-9]{0,15}', os.environ['GENESIS_TIMESTAMP'], 'GENESIS_TIMESTAMP')
+          require(r'[A-Za-z0-9]+(?:,[A-Za-z0-9]+)*', os.environ['GOVERNANCE_SIGNERS'], 'GOVERNANCE_SIGNERS')
+          require(r'[A-Za-z0-9]+(?:,[A-Za-z0-9]+)*', os.environ['AUTHORIZED_SIGNERS'], 'AUTHORIZED_SIGNERS')
+          require(r'(?=.{1,253}$)[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?', os.environ['DOMAIN'], 'DOMAIN')
+          require(r'true|false', os.environ['DMCA_ENABLE'], 'DMCA_ENABLE')
+          cors = os.environ.get('CORS_ALLOWED_ORIGINS') or f"https://{os.environ['DOMAIN']}"
+          for origin in cors.split(','):
+              parsed = urlsplit(origin)
+              if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment:
+                  raise SystemExit('invalid CORS_ALLOWED_ORIGINS')
+          root = Path(os.environ['RUNNER_TEMP']) / 'open4wd-pinning-k8s'
+          replacements = {
+              'REPLACE_OWNER': os.environ['IMAGE_OWNER'].lower(),
+              'REPLACE_TAG': os.environ['IMAGE_TAG'],
+              'REPLACE_WITH_REAL_LEDGER_ADDRESS': os.environ['LEDGER_DB_ADDRESS'],
+              'REPLACE_WITH_GENESIS_TIMESTAMP': os.environ['GENESIS_TIMESTAMP'],
+              'REPLACE_GOVERNANCE_SIGNERS': os.environ['GOVERNANCE_SIGNERS'],
+              'REPLACE_AUTHORIZED_SIGNERS': os.environ['AUTHORIZED_SIGNERS'],
+              'REPLACE_CORS_ALLOWED_ORIGINS': cors,
+              'REPLACE_DMCA_ENABLE': os.environ['DMCA_ENABLE'],
+              'REPLACE_WITH_DOMAIN': os.environ['DOMAIN'],
+          }
+          for path in root.rglob('*.yaml'):
+              text = path.read_text()
+              for old, new in replacements.items(): text = text.replace(old, new)
+              path.write_text(text)
+          remaining = [p for p in root.rglob('*.yaml') if 'REPLACE_' in p.read_text()]
+          if remaining: raise SystemExit('unrendered placeholders: ' + ', '.join(map(str, remaining)))
+          PY
+
+      - name: Apply to GKE
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+          CLUSTER_SECRET: ${{ secrets.CLUSTER_SECRET }}
+          BOOTSTRAP_PEER_PRIVKEY: ${{ secrets.BOOTSTRAP_PEER_PRIVKEY }}
+          DMCA_ADMIN_TOKEN: ${{ secrets.DMCA_ADMIN_TOKEN }}
+          SMTP_URL: ${{ secrets.SMTP_URL }}
+        run: |
+          umask 077
+          printf '%s' "$KUBE_CONFIG" > kubeconfig
+          export KUBECONFIG="$PWD/kubeconfig"
+          kubectl create secret generic open4wd-pinning-secrets \
+            --from-literal=CLUSTER_SECRET="$CLUSTER_SECRET" \
+            --from-literal=BOOTSTRAP_PEER_PRIVKEY="$BOOTSTRAP_PEER_PRIVKEY" \
+            --from-literal=DMCA_ADMIN_TOKEN="$DMCA_ADMIN_TOKEN" \
+            --from-literal=SMTP_URL="$SMTP_URL" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -k "$RUNNER_TEMP/open4wd-pinning-k8s"
+          kubectl wait --for=condition=Ready certificate/open4wd-pinning --timeout=300s
+          kubectl rollout status deployment/open4wd-pinning --timeout=300s
+
+      - name: Strict smoke or rollback
+        env:
+          DOMAIN: ${{ vars.DOMAIN }}
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          export KUBECONFIG="$PWD/kubeconfig"
+          for attempt in {1..12}; do
+            if pnpm exec tsx scripts/smoke.ts --strict "https://$DOMAIN"; then exit 0; fi
+            echo "Strict smoke attempt $attempt/12 failed; waiting for ingress propagation."
+            sleep 10
+          done
+          kubectl rollout undo deployment/open4wd-pinning || true
+          kubectl rollout status deployment/open4wd-pinning --timeout=300s || true
+          exit 1
+
+      - name: Cleanup kubeconfig
+        if: always()
+        run: rm -f kubeconfig

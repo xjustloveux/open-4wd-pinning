@@ -1,0 +1,20 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  - job_name: open4wd-pinning-app
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['app:9464']
+
+  # Kubo 的 /debug/metrics/prometheus、IPFS Cluster 與 host/node-exporter 請由營運者部署
+  # overlay 依實際容器版本與 private service 名稱另加 job；不要用 app 指標偽造零值。

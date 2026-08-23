@@ -1,0 +1,28 @@
+/**
+ * network/peer-discovery — 節點發現常數（非共識）
+ */
+
+export const BOOTSTRAP_DIAL_TIMEOUT_MS = 15_000;
+export const DHT_QUERY_TIMEOUT_MS = 10_000;
+export const DHT_QUERY_SELF_INTERVAL_MS = 600_000; // 10 分鐘
+export const GOSSIPSUB_HEARTBEAT_INTERVAL_MS = 1000;
+export const TOPIC_RATE_WINDOW_MS = 60_000; // 初估
+export const TOPIC_RATE_MAX_PER_WINDOW = 30; // 初估
+export const TOPIC_RATE_COUNTERS_MAX = 4096;
+export const GOSSIP_SOURCE_STATES_MAX = 4096;
+export const GOSSIP_NONCES_PER_SOURCE_MAX = 64;
+export const GOSSIP_GLOBAL_WINDOW_MS = 60_000;
+export const GOSSIP_GLOBAL_RAW_BYTES_MAX = 64 * 1024 * 1024;
+export const GOSSIP_GLOBAL_RAW_MESSAGES_MAX = 4096;
+export const GOSSIP_GLOBAL_VERIFICATIONS_MAX = 2048;
+export const GOSSIP_MESSAGE_MAX_BYTES = 65_536;
+export const GOSSIP_PAYLOAD_MAX_DEPTH = 8;
+export const GOSSIP_PAYLOAD_MAX_ENTRIES = 512;
+export const GOSSIP_STRING_MAX_BYTES = 32_768;
+export const GOSSIP_MULTIADDR_MAX_CHARS = 2048;
+export const GOSSIP_RESOURCE_ID_MAX_CHARS = 512;
+/** GossipSub mesh 的目標 peer 數，直接對應原生 `D`。 */
+export const GOSSIPSUB_MESH_DEGREE = 6;
+export const GOSSIPSUB_SCORE_GOSSIP_THRESHOLD = -10;
+export const GOSSIPSUB_SCORE_PUBLISH_THRESHOLD = -50;
+export const GOSSIPSUB_SCORE_GRAYLIST_THRESHOLD = -80;

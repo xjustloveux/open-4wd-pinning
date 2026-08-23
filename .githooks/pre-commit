@@ -1,0 +1,3 @@
+#!/bin/sh
+# Open4WD 管理的本機註解品質 hook。
+exec node scripts/comment-hook-runner.mjs staged

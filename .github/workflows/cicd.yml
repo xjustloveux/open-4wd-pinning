@@ -1,0 +1,137 @@
+name: CI/CD
+
+on:
+  push:
+  pull_request:
+
+# 最小權限起手；packages: write 只在真的要 push GHCR 的 job 內另外開。
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # pnpm 版本只由 package.json 的 packageManager 釘定；action 不再另帶 version，
+      # 否則兩處不一致時 pnpm/action-setup 會以 Multiple versions of pnpm specified 直接中止。
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm check:types
+      - run: pnpm test:scripts
+
+      # 零重試（與 main 同一原則）：測試步驟不包「失敗就重跑一次」。重跑包裝會把斷言失敗也一併
+      # 吞掉，讓 flaky 測試只剩 annotation 可見、不再擋 merge；偶發的子行程崩潰就讓它紅，人工重跑。
+      - name: Unit tests
+        run: pnpm test
+
+      # 真 kubo＋真 cluster：由 integration/pin-flow.integration.spec.ts 自己的 beforeAll／
+      # afterAll 對 integration/compose.test.yml 執行 docker compose up／down（ubuntu-latest
+      # runner 原生具備可用的 docker daemon，不需要另外起 GitHub Actions 的 jobs.services）。
+      #
+      # 這支 spec 對「daemon 不可用」用 describe.skipIf 靜默跳過整組案例、exit code 仍是 0——
+      # 環境不齊與真的全數通過在單純看 exit code 時無法區分。CI 上兩者不能混淆：daemon 理應
+      # 恆可用，任何 skip 都代表這組案例根本沒有真的跑起來，必須讓這一步失敗，不能被誤判成綠。
+      # 用 vitest 內建 JSON reporter（numPendingTests）而非解析人類可讀摘要文字做這個斷言，
+      # 避免摘要措辭未來變動時斷言悄悄失效。
+      - name: Integration tests against real kubo + cluster (skip count must be 0)
+        run: |
+          set -eo pipefail
+          run_integration() {
+            npx vitest run --config vitest.integration.config.ts \
+              --reporter=default --reporter=json --outputFile=.integration-result.json
+          }
+          run_integration
+          node -e "
+            const r = require('./.integration-result.json');
+            if (r.numPendingTests > 0) {
+              console.error('vitest 回報 ' + r.numPendingTests + ' 筆測試被跳過——CI 上 kubo/cluster 必須真的起得來並完整跑完，不允許任何 skip。');
+              process.exit(1);
+            }
+            if (r.numTotalTests === 0) {
+              console.error('vitest 回報零測試——spec 未被收集到，config 有誤。');
+              process.exit(1);
+            }
+            console.log('skip 計數確認為 0（' + r.numTotalTests + ' 筆全數真執行於真 kubo/cluster）。');
+          "
+
+      - name: E2E tests
+        run: pnpm e2e
+
+      # Vendored bytes 與同步時寫入 MANIFEST 的語意套件契約可在本 repo
+      # 自給自足驗證，不讀取其他 repository；exact-SHA remote raw/package 驗證
+      # 另作為選配 release gate。
+      - run: pnpm check:vendor -- --local-only
+
+      # 規則 ownership 只需公開 Specs 與本 repo；固定 commit 避免 live branch 漂移，且刻意
+      # 放在所有 repo-wide 掃描後，避免嵌入的 Specs checkout 被 format／lint／types 重複掃描。
+      - name: Checkout immutable public Specs for owner-scoped trace
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: xjustloveux/open-4wd-specs
+          ref: 730d3a694f390df67ef916b1e7ca7c764be9add4
+          path: .ci/open-4wd-specs
+          lfs: false
+      - name: Verify pinning-owned rule trace
+        run: node .ci/open-4wd-specs/scripts/check-trace.mjs --target open-4wd-pinning=scripts --target open-4wd-pinning=integration
+
+  # 只作為官方上游 branch protection 的語言中立品質檢查；不被 build、test 或發布 job needs。
+  comment-quality:
+    if: github.repository == 'xjustloveux/open-4wd-pinning'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # pnpm 版本只由 package.json 的 packageManager 釘定；action 不再另帶 version，
+      # 否則兩處不一致時 pnpm/action-setup 會以 Multiple versions of pnpm specified 直接中止。
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:comments:self-test
+      - run: pnpm check:comments
+
+  # 只 build app（kubo／cluster 用上游發布的 image，manifests／compose 直接引用，不需要本 repo
+  # 建置）；只在推進預設分支時發布，PR 不 push（避免任何來源的 PR 都能把映像推進公版 registry）。
+  # 永不部署——這個 job 的終點就是把 image 放上 GHCR，沒有任何一步會去碰任何實際部署環境。
+  build-and-push:
+    needs: verify
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Compute image name and tag
+        id: image
+        run: |
+          owner_lower=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "name=ghcr.io/${owner_lower}/open-4wd-pinning-app" >> "$GITHUB_OUTPUT"
+          echo "tag=$(date -u +%Y%m%d%H%M%S)-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      # image.source 指向「執行這次建置的 repository」：GHCR 會據此把 package 連結回該 repo 並
+      # 繼承它的權限，repo 若重建也不必再手動把寫入權加回 package。fork 各自指向自己，不寫死上游。
+      - name: Build app image
+        run: |
+          docker build -f deploy/docker/Dockerfile \
+            --label "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" \
+            -t "${{ steps.image.outputs.name }}:${{ steps.image.outputs.tag }}" \
+            -t "${{ steps.image.outputs.name }}:latest" \
+            .
+
+      - name: Push app image
+        run: |
+          docker push "${{ steps.image.outputs.name }}:${{ steps.image.outputs.tag }}"
+          docker push "${{ steps.image.outputs.name }}:latest"

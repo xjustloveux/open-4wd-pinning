@@ -1,0 +1,13 @@
+# 先依部署指南建立名為 letsencrypt-prod 的 ClusterIssuer；cert-manager 會自動續期，
+# nginx ingress 會熱載更新後的 open4wd-pinning-tls，不需重啟 app pod。
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: open4wd-pinning
+spec:
+  secretName: open4wd-pinning-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - REPLACE_WITH_DOMAIN

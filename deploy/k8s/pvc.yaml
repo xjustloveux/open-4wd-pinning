@@ -1,0 +1,43 @@
+# 三顆 PVC，對應三容器各自的持久化需求。容量為模板理想值——依實際資源調整（README 有說明）；
+# 單機自架縮小容量即可，不必照抄。
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: open4wd-pinning-app-data
+  labels:
+    app: open4wd-pinning
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      # blockstore／datastore／orbitdb 帳本 replica／dmca-notices
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: open4wd-pinning-ipfs-data
+  labels:
+    app: open4wd-pinning
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      # kubo repo：大容量內容倉庫（cold match partitions／UGC 副本）
+      storage: 100Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: open4wd-pinning-cluster-data
+  labels:
+    app: open4wd-pinning
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      # ipfs-cluster CRDT 狀態與 pin metadata（配額記帳的唯一事實來源）
+      storage: 10Gi

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and early discussion
+    url: https://github.com/xjustloveux/open-4wd/discussions
+    about: Ask the community first. This solo hobby project may take several days to acknowledge a new topic.
+  - name: Security vulnerability reports
+    url: https://github.com/xjustloveux/open-4wd/security/policy
+    about: Follow the private reporting instructions. Do not disclose vulnerability details in a public issue.

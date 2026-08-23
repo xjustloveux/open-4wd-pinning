@@ -1,0 +1,24 @@
+# graphify 白名單（include 清單制：先全排除、逐項 re-include）
+# 範圍依 文檔工程改善計畫 項 10.3：ts＋設定模板（deploy/）＋manifests＋README；
+# vendored 工件（core/vendor/）與設計／計畫／進度類 md（.superpowers/、docs/superpowers/）不入圖。
+/*
+!/api/
+!/app/
+!/auth/
+!/config/
+!/core/
+core/vendor/
+!/dmca/
+!/integration/
+!/node/
+!/pinning/
+!/subscriber/
+!/deploy/
+!/scripts/
+!/e2e/
+!/README.md
+!/vitest.config.ts
+!/vitest.e2e.config.ts
+!/vitest.integration.config.ts
+# 設定 json 不入圖（07-25：graphify 把 .json 當 code、鍵抽成 $schema/version… 雜訊節點）
+*.json

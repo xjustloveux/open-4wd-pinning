@@ -1,0 +1,243 @@
+# 單 Deployment 三容器（app／kubo／cluster）共用同一個 pod——三者天生共用 localhost 網路
+# 命名空間，故容器間互連一律用 127.0.0.1（下面 env 沒特別覆寫 CLUSTER_API_URL／KUBO_API_URL
+# 就是因為 config 內建預設值本身已經是 127.0.0.1，對這個拓撲剛好正確；deploy/docker 走
+# docker-compose 各服務各自命名空間的拓撲，那邊才需要顯式覆寫成服務名 DNS）。
+#
+# 本檔是「可直接 kubectl apply 起得來」的最小可用範本，非最終部署值：image tag 與所有標成
+# REPLACE_ 開頭的欄位由 fork 的 dispatch-only workflow 在 checkout 外渲染；真實 secrets
+# 只由 GitHub Actions 注入 Kubernetes Secret，不要把真實密鑰／位址改進這個公版 repo。
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: open4wd-pinning-kubo-init
+  labels:
+    app: open4wd-pinning
+data:
+  # Addresses.API／Peering.Peers 這兩段與 deploy/docker/kubo-init.d/10-peering.sh 同一份邏輯
+  # （k8s ConfigMap 無法直接引用外部檔案，改動這兩段時兩邊都要同步）——kubo 上游 image 的
+  # container-init.d 掛鉤，ipfs init 完成之後、daemon 啟動之前執行；不需要執行位元。下面的
+  # Addresses.Swarm 改埠是 k8s 專屬（理由見該行註解），不要複製進 compose 版本。
+  10-peering.sh: |
+    #!/bin/sh
+    set -e
+    ipfs config Addresses.API /ip4/0.0.0.0/tcp/5001
+    KUBO_STORAGE_MAX="${KUBO_STORAGE_MAX:-80GB}"
+    ipfs config Datastore.StorageMax "$KUBO_STORAGE_MAX"
+    KUBO_ROUTING_TYPE="${KUBO_ROUTING_TYPE:-none}"
+    case "$KUBO_ROUTING_TYPE" in
+      none|auto|autoclient|dht|dhtclient|dhtserver) ;;
+      *)
+        echo "不支援的 KUBO_ROUTING_TYPE: $KUBO_ROUTING_TYPE" >&2
+        exit 1
+        ;;
+    esac
+    ipfs config Routing.Type "$KUBO_ROUTING_TYPE"
+    ipfs config --bool Gateway.NoFetch true
+    ipfs config --json Swarm.ConnMgr.LowWater 16
+    ipfs config --json Swarm.ConnMgr.HighWater 32
+    if [ "$KUBO_ROUTING_TYPE" = "none" ]; then
+      ipfs bootstrap rm --all
+      ipfs config --bool Discovery.MDNS.Enabled false
+      ipfs config --bool Swarm.DisableNatPortMap true
+      ipfs config --bool Swarm.EnableHolePunching false
+      ipfs config --bool Swarm.RelayClient.Enabled false
+      ipfs config --bool Swarm.RelayService.Enabled false
+    else
+      ipfs bootstrap add --default
+      echo "已明示啟用 public IPFS routing ($KUBO_ROUTING_TYPE)；請確認 README 所列供應與政策邊界"
+    fi
+    # k8s 專屬：本 Deployment 把 app／kubo／cluster 三容器放進同一個 pod、共用同一個網路
+    # 命名空間。app 的 libp2p-ws（LISTEN_WS 預設 /ip4/0.0.0.0/tcp/4001/ws）與 kubo 預設的
+    # Addresses.Swarm 都會綁 TCP 0.0.0.0:4001，同一個 netns 內兩者互撞 EADDRINUSE，其一容器
+    # 會 CrashLoopBackOff。這裡把 kubo 的 swarm 位址改綁 4101 讓出 4001；kubo 的 swarm 位址
+    # 本來就沒有透過 service.yaml 對外曝露（只曝露 kubo 的 gateway 埠），改埠不影響
+    # Service／Ingress。compose 拓撲下三個服務各自獨立網路命名空間、天生不衝突，這行不要加進
+    # deploy/docker/kubo-init.d/10-peering.sh。
+    ipfs config --json Addresses.Swarm '["/ip4/0.0.0.0/tcp/4101","/ip4/0.0.0.0/udp/4101/quic-v1"]'
+    if [ -n "$BOOTSTRAP_PEER_ID" ] && [ -n "$KUBO_PEERING_APP_MULTIADDR" ]; then
+      ipfs config --json Peering.Peers "[{\"ID\":\"${BOOTSTRAP_PEER_ID}\",\"Addrs\":[\"${KUBO_PEERING_APP_MULTIADDR}\"]}]"
+    else
+      echo "BOOTSTRAP_PEER_ID／KUBO_PEERING_APP_MULTIADDR 未設定，略過 Peering.Peers"
+    fi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open4wd-pinning
+  labels:
+    app: open4wd-pinning
+spec:
+  # replicas 固定為 1，這是正確的出貨值而非暫定起始點：本檔三顆 PVC 皆為 ReadWriteOnce、由
+  # 同一個 pod 內三容器各自掛載，拉高 replicas 只會讓多個 pod 搶同一組 RWO PVC（多數儲存後端
+  # 不允許跨節點同時掛載，或新 pod 卡在 Pending），不構成真正的水平擴展。真要多節點需改用
+  # 每副本各自一組 volume 的拓撲（例如 StatefulSet＋volumeClaimTemplates），並處理隨之而來的
+  # ingress 路由等額外設計，不在本範本範圍內。
+  replicas: 1
+  # 三顆 RWO PVC 不能同時掛在舊／新 pod；RollingUpdate 的 surge pod 會卡在 volume attach。
+  # Recreate 先停舊 pod 再啟新 pod，接受短暫停機以換取可預期且不會死鎖的單節點升級。
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: open4wd-pinning
+  template:
+    metadata:
+      labels:
+        app: open4wd-pinning
+    spec:
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+      # 本範本刻意不設 readiness／liveness 探針與 resource requests／limits：三容器的健康
+      # 判準與資源用量高度依賴你的實際 pin 量與流量（見 README「部署行為要點」的記憶體起點
+      # 建議），寫死一組通用數字對範本使用者不見得比較安全，請依你的部署規模自行於 overlay
+      # 補上。app 容器的 `GET /stats` 恆回 200、不受 kubo／cluster 是否就緒影響（見 README
+      # 「快速開始」smoke 用法），是現成的 readiness／liveness 標的；kubo／cluster 可比照
+      # deploy/docker/docker-compose.yml 既有的 healthcheck 指令改寫成 exec 探針。
+      containers:
+        - name: app
+          image: ghcr.io/REPLACE_OWNER/open-4wd-pinning-app:REPLACE_TAG
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          ports:
+            - name: api
+              containerPort: 8000
+            - name: libp2p-ws
+              containerPort: 4001
+            - name: metrics
+              containerPort: 9464
+          env:
+            - name: DATA_DIR
+              value: /app/data
+            - name: LEDGER_DB_ADDRESS
+              value: REPLACE_WITH_REAL_LEDGER_ADDRESS
+            - name: GENESIS_TIMESTAMP
+              value: 'REPLACE_WITH_GENESIS_TIMESTAMP'
+            # 空集＝checkpoint 驅動的自動 pin 停用（fail-closed）；授權 pin API 不受影響——
+            # 部署前務必填入，見 README「設定」章節的粗體提醒。
+            - name: GOVERNANCE_SIGNERS
+              value: REPLACE_GOVERNANCE_SIGNERS
+            # 瀏覽器跨來源 API 的逗號分隔明示 allowlist；空值＝fail-closed。
+            - name: CORS_ALLOWED_ORIGINS
+              value: REPLACE_CORS_ALLOWED_ORIGINS
+            - name: BOOTSTRAP_PEER_PRIVKEY
+              valueFrom:
+                secretKeyRef:
+                  name: open4wd-pinning-secrets
+                  key: BOOTSTRAP_PEER_PRIVKEY
+                  optional: true
+            - name: RELAY_ENABLE
+              value: 'true'
+            - name: AUTHORIZED_SIGNERS
+              value: REPLACE_AUTHORIZED_SIGNERS
+            - name: REPUTATION_THRESHOLD
+              value: ''
+            - name: PROVIDER_UGC_READ_ENABLE
+              value: 'true'
+            - name: PROVIDER_UGC_WRITE_ENABLE
+              value: 'true'
+            - name: PROVIDER_TRANSPARENCY_ENABLE
+              value: 'true'
+            - name: DMCA_ENABLE
+              value: REPLACE_DMCA_ENABLE
+            - name: DMCA_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: open4wd-pinning-secrets
+                  key: DMCA_ADMIN_TOKEN
+                  optional: true
+            - name: SMTP_URL
+              valueFrom:
+                secretKeyRef:
+                  name: open4wd-pinning-secrets
+                  key: SMTP_URL
+                  optional: true
+            - name: DMCA_DESIGNATED_AGENT_REGISTRATION
+              value: 'not-declared'
+            - name: DMCA_ADMIN_DOCS_ENABLE
+              value: 'false'
+            - name: DMCA_TRUST_CLOUDFLARE_ACCESS_IDENTITY
+              value: 'false'
+            # 預設關閉且 Service/Ingress 不曝露；private Prometheus overlay 啟用時另設
+            # METRICS_ENABLE=true、METRICS_HOST=0.0.0.0，並以 NetworkPolicy 限制抓取來源。
+            - name: METRICS_ENABLE
+              value: 'false'
+            - name: METRICS_HOST
+              value: 127.0.0.1
+            - name: METRICS_PORT
+              value: '9464'
+          volumeMounts:
+            - name: app-data
+              mountPath: /app/data
+        - name: kubo
+          image: ipfs/kubo:v0.42.0
+          ports:
+            - name: gateway
+              containerPort: 8080
+            # 對應上面 kubo-init ConfigMap 把 Addresses.Swarm 改到的埠（讓出 4001 給 app 的
+            # libp2p-ws）；kubo 的 swarm 埠不需要、也沒有透過 service.yaml 對外曝露。
+            - name: swarm
+              containerPort: 4101
+          env:
+            # app 那把 BOOTSTRAP_PEER_PRIVKEY 對應的公開 PeerId（非機密）；沒有固定身分就留空，
+            # kubo-init 腳本會略過 Peering 設定。
+            - name: BOOTSTRAP_PEER_ID
+              value: ''
+            - name: KUBO_PEERING_APP_MULTIADDR
+              value: /ip4/127.0.0.1/tcp/4001/ws
+            # 與 app 預設 64 GiB global quota、pvc.yaml 的 100 Gi volume 保持 headroom。
+            # overlay 改任一值時，三者必須一起調整。
+            - name: KUBO_STORAGE_MAX
+              value: 80GB
+            # 公版預設只使用明示 Peering，不加入 public DHT／delegated routing。
+            - name: KUBO_ROUTING_TYPE
+              value: none
+          volumeMounts:
+            - name: ipfs-data
+              mountPath: /data/ipfs
+            - name: kubo-init
+              mountPath: /container-init.d
+              readOnly: true
+        - name: cluster
+          image: ipfs/ipfs-cluster:v1.1.6
+          env:
+            - name: CLUSTER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: open4wd-pinning-secrets
+                  key: CLUSTER_SECRET
+            - name: CLUSTER_PEERNAME
+              value: open-4wd-pinning
+            - name: IPFS_CLUSTER_CONSENSUS
+              value: crdt
+            - name: CLUSTER_IPFSHTTP_NODEMULTIADDRESS
+              value: /ip4/127.0.0.1/tcp/5001
+            - name: CLUSTER_RESTAPI_HTTPLISTENMULTIADDRESS
+              value: /ip4/0.0.0.0/tcp/9094
+            - name: CLUSTER_CRDT_TRUSTEDPEERS
+              value: '*'
+          volumeMounts:
+            - name: cluster-data
+              mountPath: /data/ipfs-cluster
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: open4wd-pinning-app-data
+        - name: ipfs-data
+          persistentVolumeClaim:
+            claimName: open4wd-pinning-ipfs-data
+        - name: cluster-data
+          persistentVolumeClaim:
+            claimName: open4wd-pinning-cluster-data
+        - name: kubo-init
+          configMap:
+            name: open4wd-pinning-kubo-init
+            defaultMode: 0755

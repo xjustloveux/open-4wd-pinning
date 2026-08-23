@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# 只示範對 Deployment 套 resource patch；operator 可把同一 patch 納入自己的完整 overlay。
+resources:
+  # 複製到營運者 fork 的完整 overlay 後，改成該 fork 的 base 路徑。
+  - ../../deployment.yaml
+
+patches:
+  - path: resources.patch.yaml

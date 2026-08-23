@@ -1,0 +1,39 @@
+# 宿主機依賴是 pnpm 絕對路徑符號連結，拷進映像會覆蓋容器內安裝、run 時必炸
+node_modules
+
+# 與映像無關
+.git
+.github
+.superpowers
+.agents
+.claude
+docs
+integration
+e2e
+deploy
+graphify-out
+**/*.spec.ts
+**/*.test.ts
+
+# 運行期資料與可能含真實密鑰的本機設定檔：真值一律用 volume 掛入或環境變數注入，不烘進映像
+data
+config/config.yaml
+.env
+.env.*
+dmca-export-*.bin
+*.pem
+*.key
+*.p12
+*.pfx
+kubeconfig
+
+# 本機建置、測試與編輯器產物
+dist
+coverage
+*.tsbuildinfo
+.idea
+.vscode
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,18 @@
+# 依賴目錄，非原始碼
+node_modules/
+
+# 鎖檔不應被格式化
+pnpm-lock.yaml
+
+# 流程用暫存目錄
+.superpowers/
+
+# vendored 檔必須逐字對應上游，格式化會破壞 hash 檢查（見 core/vendor/MANIFEST.json 的
+# sha256 比對；比照 eslint.config.js 的 ignores: ['core/vendor/**']）
+core/vendor/
+
+# 文件內含供實作者逐字複製的程式碼區塊，prettier 的 embedded formatting 會改動它們
+docs/
+
+# graphify 產物含跨 repo 關聯與可提交的語意 cache；只排除格式化，不改版控／掃描邊界
+graphify-out/

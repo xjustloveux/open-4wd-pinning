@@ -1,0 +1,112 @@
+name: Graphify Release
+
+on:
+  workflow_run:
+    workflows: [CI/CD]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: graphify-release-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: ${{ vars.GRAPHIFY_RELEASE_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master')) }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.publish.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Build and publish exact Graphify Release
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install 'graphifyy==0.9.25'
+          graphify extract . --code-only --no-cluster
+          generated_at="$(git show -s --format=%cI "${SOURCE_SHA}")"
+          node scripts/prepare-graphify-release.mjs \
+            --repository "${GITHUB_REPOSITORY}" \
+            --source-sha "${SOURCE_SHA}" \
+            --generated-at "$(date -u -d "${generated_at}" +%Y-%m-%dT%H:%M:%S.000Z)"
+          tag="graphify-${SOURCE_SHA:0:12}"
+          created=0
+          if gh release view "${tag}" >/dev/null 2>&1; then
+            echo "Exact Graphify Release already exists: ${tag}"
+          else
+            gh release create "${tag}" \
+              graphify-release/graphify-site.zip \
+              graphify-release/graphify-manifest.json \
+              --target "${SOURCE_SHA}" \
+              --title "Graphify ${SOURCE_SHA:0:12}" \
+              --notes "source-sha: ${SOURCE_SHA}" \
+              --latest=false
+            created=1
+          fi
+          # 驗產出而非設定：查 repository 不可變設定的端點屬 administration 範疇，
+          # 而 administration 不在 GITHUB_TOKEN 可宣告的 permissions 之列，內建 token 讀不到。
+          # 改讀 release 自身的 immutable 欄位（releases API，現有 contents 權限即可），
+          # 對 fork 一樣成立，且驗的是實際產出而非可能在檢查與建立之間改變的設定。
+          immutable="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${tag}" --jq '.immutable' || echo unknown)"
+          if [ "${immutable}" != "true" ]; then
+            echo "::error::Graphify Release ${tag} is not immutable (got: ${immutable}). Enable immutable releases for this repository, then re-run."
+            # 只清掉本次建立的；可變的 release 才刪得掉，既有 release 不動。
+            if [ "${created}" = "1" ]; then
+              gh release delete "${tag}" --yes --cleanup-tag || true
+            fi
+            exit 1
+          fi
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+
+  notify-specs:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check optional GitHub App configuration
+        id: app
+        env:
+          APP_ID: ${{ vars.OPEN4WD_GRAPH_APP_ID }}
+          APP_PRIVATE_KEY: ${{ secrets.OPEN4WD_GRAPH_APP_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          if [[ -n "${APP_ID}" && -n "${APP_PRIVATE_KEY}" ]]; then
+            echo 'configured=true' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'configured=false' >> "${GITHUB_OUTPUT}"
+            echo 'GitHub App is not configured; scheduled/manual specs refresh remains available.'
+          fi
+      - name: Mint specs-only GitHub App token
+        if: ${{ steps.app.outputs.configured == 'true' }}
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.OPEN4WD_GRAPH_APP_ID }}
+          private-key: ${{ secrets.OPEN4WD_GRAPH_APP_PRIVATE_KEY }}
+          owner: xjustloveux
+          repositories: open-4wd-specs
+      - name: Notify specs without trusting payload as source data
+        if: ${{ steps.app.outputs.configured == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_TAG: ${{ needs.release.outputs.tag }}
+        shell: bash
+        run: |
+          gh api --method POST repos/xjustloveux/open-4wd-specs/dispatches \
+            -f event_type=graphify-release-published \
+            -f client_payload[repository]="${GITHUB_REPOSITORY}" \
+            -f client_payload[tag]="${RELEASE_TAG}"

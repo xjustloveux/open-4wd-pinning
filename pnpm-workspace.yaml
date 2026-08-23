@@ -1,0 +1,11 @@
+verifyDepsBeforeRun: error
+allowBuilds:
+  # esbuild＝vitest 的建置器，放行
+  esbuild: true
+  # classic-level＝本服務 Node 端 LevelDB（checkpoint CAS 儲存與 dmca-notices 用）——prebuild 放行
+  classic-level: true
+  # node-datachannel＝@libp2p/webrtc 的 Node 端原生 WebRTC——app 節點 transports 只有 ws/relay、不經它；
+  # 沿主專案供應鏈立場拒建（vendored 檔的動態 import 僅需可解析、不會在 Node 下呼叫）
+  node-datachannel: false
+  # swagger-ui-dist 的間接依賴只用於安裝遙測；self-host 靜態資產不需要執行它
+  '@scarf/scarf': false

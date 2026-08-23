@@ -1,0 +1,37 @@
+# EXAMPLE ONLY：這不是公版預設，也不是所有 deployment 的建議值。
+# 先依 deploy/sizing/README.md 量測，再按實際 pinset、流量與節點角色調整。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open4wd-pinning
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: '2'
+              memory: 4Gi
+        - name: kubo
+          env:
+            - name: GOMEMLIMIT
+              value: 3GiB
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: '2'
+              memory: 4Gi
+        - name: cluster
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: '1'
+              memory: 1Gi

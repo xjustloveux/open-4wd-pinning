@@ -1,0 +1,67 @@
+name: Bug report
+description: Report a reproducible Open4WD defect
+title: '[Bug]: '
+labels:
+  - type/bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Open4WD. This is a solo hobby project, so acknowledgement and follow-up may take several days. Security vulnerabilities must be reported through the SECURITY.md contact instead of a public issue.
+  - type: dropdown
+    id: impact_scope
+    attributes:
+      label: Impact scope
+      description: Choose the broad area most affected by the defect.
+      options:
+        - Application or gameplay
+        - Content creation or tools
+        - Networking or service deployment
+        - Documentation or specifications
+        - Other or uncertain
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the defect and its user-visible impact.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Provide the smallest repeatable sequence that demonstrates the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Explain what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the repository revision, browser or runtime, operating system, and relevant deployment mode.
+    validations:
+      required: true
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Add logs, screenshots, or other public-safe details if useful. Remove secrets and personal data.
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmation
+      options:
+        - label: I searched existing issues for the same problem.
+          required: true
+        - label: This report contains no secrets, private data, or undisclosed security vulnerability details.
+          required: true

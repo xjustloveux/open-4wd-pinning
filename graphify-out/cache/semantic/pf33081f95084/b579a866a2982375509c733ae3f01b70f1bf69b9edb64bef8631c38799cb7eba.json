@@ -1,0 +1,95 @@
+{
+  "nodes": [
+    {
+      "id": "deploy_monitoring_prometheus_configuration",
+      "label": "Prometheus configuration",
+      "file_type": "document",
+      "source_file": "deploy/monitoring/prometheus.yml",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "deploy_monitoring_prometheus_app_scrape_job",
+      "label": "open4wd-pinning-app scrape job",
+      "file_type": "concept",
+      "source_file": "deploy/monitoring/prometheus.yml",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Prometheus scrapes /metrics from app:9464 every 30 seconds."
+    },
+    {
+      "id": "deploy_monitoring_prometheus_alertmanager_target",
+      "label": "Alertmanager target alertmanager:9093",
+      "file_type": "concept",
+      "source_file": "deploy/monitoring/prometheus.yml",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "deploy_monitoring_prometheus_native_metrics_jobs",
+      "label": "Operator-defined native infrastructure scrape jobs",
+      "file_type": "concept",
+      "source_file": "deploy/monitoring/prometheus.yml",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Kubo, IPFS Cluster, and node-exporter jobs must be added using actual deployed versions and private service names; application metrics must not fabricate zero-valued substitutes."
+    }
+  ],
+  "edges": [
+    {
+      "source": "deploy_monitoring_prometheus_configuration",
+      "target": "deploy_monitoring_prometheus_app_scrape_job",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "deploy/monitoring/prometheus.yml",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "deploy_monitoring_prometheus_configuration",
+      "target": "deploy_monitoring_prometheus_alertmanager_target",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "deploy/monitoring/prometheus.yml",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "deploy_monitoring_prometheus_configuration",
+      "target": "deploy_monitoring_prometheus_native_metrics_jobs",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "deploy/monitoring/prometheus.yml",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "deploy_monitoring_prometheus_app_scrape_job",
+      "target": "deploy_docker_docker_compose_three_service_topology",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "deploy/monitoring/prometheus.yml",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

@@ -1,0 +1,12 @@
+# Dependabot 只追 GitHub Actions 的 commit SHA pin（連同 `# vX.Y.Z` 版本註解一起更新），
+# 讓「不可變鎖定」不會變成「陳舊鎖定」。npm／pip 依賴維持 exact pin＋人工審查，不交給 Dependabot。
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - '*'

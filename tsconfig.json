@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "target": "es2023",
+    "lib": ["es2023", "dom"],
+    "skipLibCheck": true,
+    "noEmit": true,
+    "verbatimModuleSyntax": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "paths": {
+      "@open4wd/system-constants": ["./core/vendor/system-constants/index.ts"],
+      "@open4wd/interfaces": ["./core/vendor/interfaces/index.ts"]
+    }
+  },
+  "include": ["**/*.ts", "core/vendor/ledger/orbitdb-core.d.ts"],
+  "exclude": ["node_modules"]
+}
