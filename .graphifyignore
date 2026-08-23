@@ -15,6 +15,7 @@ core/vendor/
 !/subscriber/
 !/deploy/
 !/scripts/
+scripts/vendor/
 !/e2e/
 !/README.md
 !/vitest.config.ts

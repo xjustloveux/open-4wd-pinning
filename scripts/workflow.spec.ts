@@ -19,6 +19,26 @@ describe('pre-public pinning CI', () => {
     expect(workflow).not.toContain('immutable-releases');
   });
 
+  it('mints the specs token from the GitHub App Client ID without the legacy App ID input', async () => {
+    const workflow = await readFile(
+      new URL('../.github/workflows/graphify-release.yml', import.meta.url),
+      'utf8',
+    );
+
+    expect(workflow).toContain('client-id: ${{ vars.OPEN4WD_GRAPH_APP_CLIENT_ID }}');
+    expect(workflow).not.toMatch(/^\s+app-id:/mu);
+    expect(workflow).not.toContain('OPEN4WD_GRAPH_APP_ID');
+  });
+
+  it('replays the complete semantic cache through the tested Graphify runner', async () => {
+    const workflow = await readFile(
+      new URL('../.github/workflows/graphify-release.yml', import.meta.url),
+      'utf8',
+    );
+    expect(workflow).toContain('node scripts/run-graphify-release.mjs');
+    expect(workflow).not.toMatch(/graphify extract[^\n]*(?:--code-only|--no-cluster)/u);
+  });
+
   it('uses the self-contained local-only vendor gate without external repository access', async () => {
     const workflow = await readFile(
       new URL('../.github/workflows/cicd.yml', import.meta.url),
@@ -71,7 +91,7 @@ describe('pre-public pinning CI', () => {
     const verify = workflow.slice(0, workflow.indexOf('comment-quality:'));
     expect(verify).toContain('pnpm test:scripts');
     expect(pkg.scripts['test:scripts']).toBe(
-      'node --test scripts/comment-hook-runner.test.mjs scripts/eslint-comment-quality.test.mjs scripts/prepare-graphify-release.test.mjs',
+      'node --test scripts/comment-hook-runner.test.mjs scripts/eslint-comment-quality.test.mjs scripts/prepare-graphify-release.test.mjs scripts/run-graphify-release.test.mjs',
     );
   });
 

@@ -7,6 +7,14 @@ import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import {
+  buildViewerProjection,
+  renderViewerData,
+  renderViewerIndex,
+  VIEWER_ENGINE,
+  VIEWER_THRESHOLD,
+} from './graphify-viewer.mjs';
+
 const SHA = /^[0-9a-f]{40}$/u;
 const REPOSITORY = /^xjustloveux\/(open-4wd|open-4wd-pinning|open-4wd-signaling|open-4wd-turn)$/u;
 const GRAPHIFY_VERSION = '0.9.25';
@@ -70,28 +78,6 @@ function zipStore(entries) {
   return Buffer.concat([...locals, directory, end]);
 }
 
-function renderIndex(repository, nodes, edges) {
-  const title = repository.split('/')[1];
-  return Buffer.from(
-    `<!doctype html>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${title} Graphify</title>
-<style>body{font:16px system-ui;max-width:76rem;margin:auto;padding:2rem;background:#0f172a;color:#e2e8f0}input{width:100%;padding:.7rem;background:#1e293b;color:inherit;border:1px solid #475569}li{margin:.5rem 0}code{color:#7dd3fc}.muted{color:#94a3b8}</style>
-<h1>${title} knowledge graph</h1>
-<p class="muted">Derived from Graphify ${GRAPHIFY_VERSION}; source remains authoritative.</p>
-<p><strong>${nodes.toLocaleString('en-US')}</strong> nodes · <strong>${edges.toLocaleString('en-US')}</strong> edges</p>
-<input id="q" placeholder="Filter node label or id"><ol id="results"></ol>
-<script type="module">
-const graph=await fetch('./graph.json').then(r=>r.json());
-const q=document.querySelector('#q'),out=document.querySelector('#results');
-function draw(){const term=q.value.trim().toLowerCase();const rows=graph.nodes.filter(n=>!term||String(n.label??n.name??n.id).toLowerCase().includes(term)).slice(0,200);out.replaceChildren(...rows.map(n=>{const li=document.createElement('li');const code=document.createElement('code');code.textContent=String(n.label??n.name??n.id);li.append(code);return li}))}
-q.addEventListener('input',draw);draw();
-</script>
-`,
-    'utf8',
-  );
-}
-
 function validatePublicGraph(graph) {
   const forbiddenText = [
     /-----BEGIN [A-Z ]*PRIVATE KEY-----/u,
@@ -151,20 +137,40 @@ export async function prepareGraphifyRelease({
   const output = resolve(outputDirectory);
   await mkdir(output, { recursive: true });
   if ((await readdir(output)).length > 0) throw new Error('Graphify release output must be empty');
-  const indexBytes = renderIndex(repository, graph.nodes.length, links.length);
+  const projection = buildViewerProjection({ repository, nodes: graph.nodes, edges: links });
+  const indexBytes = renderViewerIndex({
+    repository,
+    nodeCount: graph.nodes.length,
+    edgeCount: links.length,
+    mode: projection.mode,
+  });
+  const viewerDataBytes = renderViewerData(projection);
+  const visNetworkBytes = await readFile(
+    resolve(dirname(fileURLToPath(import.meta.url)), 'vendor', 'vis-network.min.js'),
+  );
+  if (!visNetworkBytes.subarray(0, 1_024).toString('utf8').includes('@version 9.1.6'))
+    throw new Error('vendored vis-network asset does not match viewer engine 9.1.6');
   const siteZip = zipStore([
     { name: 'graph.json', bytes: graphBytes },
     { name: 'index.html', bytes: indexBytes },
+    { name: 'viewer-data.js', bytes: viewerDataBytes },
+    { name: 'vis-network.min.js', bytes: visNetworkBytes },
   ]);
   await writeFile(join(output, 'graphify-site.zip'), siteZip);
   const manifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     repository,
     sourceSha: normalizedSha,
     tag: `graphify-${normalizedSha.slice(0, 12)}`,
     graphifyVersion: GRAPHIFY_VERSION,
     generatedAt,
     graph: { nodes: graph.nodes.length, edges: links.length },
+    viewer: {
+      mode: projection.mode,
+      threshold: VIEWER_THRESHOLD,
+      engine: VIEWER_ENGINE,
+      data: 'viewer-data.js',
+    },
     assets: [{ name: 'graphify-site.zip', size: siteZip.length, sha256: sha256(siteZip) }],
   };
   await writeFile(join(output, 'graphify-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);

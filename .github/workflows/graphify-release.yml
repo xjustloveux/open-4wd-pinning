@@ -38,7 +38,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install 'graphifyy==0.9.25'
-          graphify extract . --code-only --no-cluster
+          node scripts/run-graphify-release.mjs
           generated_at="$(git show -s --format=%cI "${SOURCE_SHA}")"
           node scripts/prepare-graphify-release.mjs \
             --repository "${GITHUB_REPOSITORY}" \
@@ -80,11 +80,11 @@ jobs:
       - name: Check optional GitHub App configuration
         id: app
         env:
-          APP_ID: ${{ vars.OPEN4WD_GRAPH_APP_ID }}
+          APP_CLIENT_ID: ${{ vars.OPEN4WD_GRAPH_APP_CLIENT_ID }}
           APP_PRIVATE_KEY: ${{ secrets.OPEN4WD_GRAPH_APP_PRIVATE_KEY }}
         shell: bash
         run: |
-          if [[ -n "${APP_ID}" && -n "${APP_PRIVATE_KEY}" ]]; then
+          if [[ -n "${APP_CLIENT_ID}" && -n "${APP_PRIVATE_KEY}" ]]; then
             echo 'configured=true' >> "${GITHUB_OUTPUT}"
           else
             echo 'configured=false' >> "${GITHUB_OUTPUT}"
@@ -95,7 +95,7 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app-id: ${{ vars.OPEN4WD_GRAPH_APP_ID }}
+          client-id: ${{ vars.OPEN4WD_GRAPH_APP_CLIENT_ID }}
           private-key: ${{ secrets.OPEN4WD_GRAPH_APP_PRIVATE_KEY }}
           owner: xjustloveux
           repositories: open-4wd-specs
