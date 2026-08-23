@@ -58,7 +58,7 @@ test('builds deterministic public Graphify release assets', async () => {
   }
 });
 
-test('packages a direct-file interactive viewer and declares manifest schema v2', async () => {
+test('packages a direct-file interactive viewer with the pre-launch manifest schema v1', async () => {
   const temporary = await mkdtemp(join(tmpdir(), 'open4wd-graphify-viewer-'));
   const graphPath = join(temporary, 'graph.json');
   await writeFile(
@@ -79,7 +79,7 @@ test('packages a direct-file interactive viewer and declares manifest schema v2'
     sourceSha: SHA,
     generatedAt: '2026-08-18T00:00:00.000Z',
   });
-  assert.equal(manifest.schemaVersion, 2);
+  assert.equal(manifest.schemaVersion, 1);
   assert.deepEqual(manifest.viewer, {
     mode: 'full',
     threshold: 5_000,
