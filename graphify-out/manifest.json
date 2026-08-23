@@ -428,12 +428,12 @@
     "semantic_hash": "306cbd23b1fd27c3e397769ea13f199c"
   },
   "scripts/run-graphify-release.mjs": {
-    "ast_hash": "05cdbc01fac18f64468bfe4c83b0be59",
-    "semantic_hash": "05cdbc01fac18f64468bfe4c83b0be59"
+    "ast_hash": "4d27a862f6d1d18d2dc7bdc277307f18",
+    "semantic_hash": "4d27a862f6d1d18d2dc7bdc277307f18"
   },
   "scripts/run-graphify-release.test.mjs": {
-    "ast_hash": "8b0bddfa8c5fb7f838f5f9812992640b",
-    "semantic_hash": "8b0bddfa8c5fb7f838f5f9812992640b"
+    "ast_hash": "8cc5e0a2053ea938a059161b1768b2ae",
+    "semantic_hash": "8cc5e0a2053ea938a059161b1768b2ae"
   },
   "scripts/setup-comment-hooks.mjs": {
     "ast_hash": "13ca1e1fe1042e8b905aa96f18fe855b",
