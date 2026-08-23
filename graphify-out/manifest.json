@@ -360,8 +360,8 @@
     "semantic_hash": "446c7439bf570163d1421eb02ac30a83"
   },
   "scripts/eslint-comment-quality.test.mjs": {
-    "ast_hash": "ef75190160c724296b6f867bace4f4ff",
-    "semantic_hash": "ef75190160c724296b6f867bace4f4ff"
+    "ast_hash": "2ce092a4e80e6644ad2fb21e4ef12980",
+    "semantic_hash": "2ce092a4e80e6644ad2fb21e4ef12980"
   },
   "scripts/graphify-viewer.mjs": {
     "ast_hash": "f50e8250ab588343e6e74c471829fc34",
@@ -444,8 +444,8 @@
     "semantic_hash": "deaf1dd050e936c3bcc1578e2915d156"
   },
   "scripts/smoke.spec.ts": {
-    "ast_hash": "22a4c1256542c59abd9fcd91012b7f2f",
-    "semantic_hash": "22a4c1256542c59abd9fcd91012b7f2f"
+    "ast_hash": "6533c6139de5426e38209ea3cde0f3a4",
+    "semantic_hash": "6533c6139de5426e38209ea3cde0f3a4"
   },
   "scripts/smoke.ts": {
     "ast_hash": "7ca09cf8ea23c907821a5fcba74bf3dd",

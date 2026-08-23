@@ -11,7 +11,7 @@ describe('pinning smoke contract', () => {
       '主遊戲尚未正式公開',
       'pnpm install --frozen-lockfile',
       '[MIT](LICENSE)',
-      'https://github.com/xjustloveux/open-4wd/security/policy',
+      'https://github.com/xjustloveux/open-4wd-specs/blob/master/%E8%B3%87%E5%AE%89%E8%A6%8F%E7%AF%84.md#101-reporting',
     ]) {
       expect(readme).toContain(required);
     }
