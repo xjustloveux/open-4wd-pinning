@@ -379,6 +379,14 @@
     "ast_hash": "28f8001735d2123f230c2257287bbd9c",
     "semantic_hash": "28f8001735d2123f230c2257287bbd9c"
   },
+  "scripts/issue-maintenance.mjs": {
+    "ast_hash": "d05fb6c90a2de6629bd990327832c3a7",
+    "semantic_hash": "d05fb6c90a2de6629bd990327832c3a7"
+  },
+  "scripts/issue-maintenance.test.mjs": {
+    "ast_hash": "9307f685dcbde1df434bf97cf0a09fc7",
+    "semantic_hash": "9307f685dcbde1df434bf97cf0a09fc7"
+  },
   "scripts/ledger-genesis-config.spec.ts": {
     "ast_hash": "61581f47cb314f1caba5fef9244d0781",
     "semantic_hash": "61581f47cb314f1caba5fef9244d0781"
@@ -492,8 +500,8 @@
     "semantic_hash": "16b178bb79a0e79ee7ff913952074a32"
   },
   "scripts/workflow.spec.ts": {
-    "ast_hash": "418e09548e4608594b6d5982b0357a5c",
-    "semantic_hash": "418e09548e4608594b6d5982b0357a5c"
+    "ast_hash": "de822ac82f832c960220e31788b22ccb",
+    "semantic_hash": "de822ac82f832c960220e31788b22ccb"
   },
   "subscriber/dag-transfer.spec.ts": {
     "ast_hash": "1af294b15a09224560b1371a93153727",
@@ -520,8 +528,8 @@
     "semantic_hash": "723838b9ee3e056a71b77df2124edb26"
   },
   "vitest.config.ts": {
-    "ast_hash": "f3701e5e1c41a7821b56fabbda4819e3",
-    "semantic_hash": "f3701e5e1c41a7821b56fabbda4819e3"
+    "ast_hash": "4ecc0589f3b9611de96634d0137196dd",
+    "semantic_hash": "4ecc0589f3b9611de96634d0137196dd"
   },
   "vitest.e2e.config.ts": {
     "ast_hash": "b8816de01119cf89c2e6372c36be5ba6",
