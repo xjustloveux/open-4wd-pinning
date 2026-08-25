@@ -367,6 +367,14 @@
     "ast_hash": "f50e8250ab588343e6e74c471829fc34",
     "semantic_hash": "f50e8250ab588343e6e74c471829fc34"
   },
+  "scripts/image-build-inputs.mjs": {
+    "ast_hash": "951e4f11baaa7bcfb91fa6b7fb908e1c",
+    "semantic_hash": "951e4f11baaa7bcfb91fa6b7fb908e1c"
+  },
+  "scripts/image-build-inputs.test.mjs": {
+    "ast_hash": "303a9f64d59a515b2b75483229aaf89d",
+    "semantic_hash": "303a9f64d59a515b2b75483229aaf89d"
+  },
   "scripts/initial-checkpoint-proof-bundle.spec.ts": {
     "ast_hash": "2c1b8ab180b4d465bca0f5e160b918ef",
     "semantic_hash": "2c1b8ab180b4d465bca0f5e160b918ef"
@@ -500,8 +508,8 @@
     "semantic_hash": "16b178bb79a0e79ee7ff913952074a32"
   },
   "scripts/workflow.spec.ts": {
-    "ast_hash": "7f5b0baeebb6a2599ea0092b633110f8",
-    "semantic_hash": "7f5b0baeebb6a2599ea0092b633110f8"
+    "ast_hash": "47c6e138be8f7417b72eccd2b5d1b9a5",
+    "semantic_hash": "47c6e138be8f7417b72eccd2b5d1b9a5"
   },
   "subscriber/dag-transfer.spec.ts": {
     "ast_hash": "1af294b15a09224560b1371a93153727",
@@ -528,8 +536,8 @@
     "semantic_hash": "723838b9ee3e056a71b77df2124edb26"
   },
   "vitest.config.ts": {
-    "ast_hash": "4ecc0589f3b9611de96634d0137196dd",
-    "semantic_hash": "4ecc0589f3b9611de96634d0137196dd"
+    "ast_hash": "3e5813b22e3f97ff7f0609ca041be05a",
+    "semantic_hash": "3e5813b22e3f97ff7f0609ca041be05a"
   },
   "vitest.e2e.config.ts": {
     "ast_hash": "b8816de01119cf89c2e6372c36be5ba6",
