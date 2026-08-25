@@ -11,8 +11,21 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    outputs:
+      image-inputs-changed: ${{ steps.image-inputs.outputs.changed }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 一般合併 push 需要目前 commit 與上一個 master tip 才能判斷映像輸入；
+          # 更深的批次 push 若找不到 before SHA，分類器會保守回傳 true。
+          fetch-depth: 2
+      - name: Detect app image input changes
+        if: github.event_name == 'push'
+        id: image-inputs
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: node scripts/image-build-inputs.mjs
       # pnpm 版本只由 package.json 的 packageManager 釘定；action 不再另帶 version，
       # 否則兩處不一致時 pnpm/action-setup 會以 Multiple versions of pnpm specified 直接中止。
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
@@ -103,7 +116,10 @@ jobs:
   # 永不部署——這個 job 的終點就是把 image 放上 GHCR，沒有任何一步會去碰任何實際部署環境。
   build-and-push:
     needs: verify
-    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      needs.verify.outputs.image-inputs-changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read

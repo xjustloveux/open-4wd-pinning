@@ -100,8 +100,26 @@ describe('pre-public pinning CI', () => {
     const verify = workflow.slice(0, workflow.indexOf('comment-quality:'));
     expect(verify).toContain('pnpm test:scripts');
     expect(pkg.scripts['test:scripts']).toBe(
-      'node --test scripts/comment-hook-runner.test.mjs scripts/eslint-comment-quality.test.mjs scripts/issue-maintenance.test.mjs scripts/prepare-graphify-release.test.mjs scripts/run-graphify-release.test.mjs',
+      'node --test scripts/comment-hook-runner.test.mjs scripts/eslint-comment-quality.test.mjs scripts/image-build-inputs.test.mjs scripts/issue-maintenance.test.mjs scripts/prepare-graphify-release.test.mjs scripts/run-graphify-release.test.mjs',
     );
+
+    const vitestConfig = (await import('../vitest.config')).default;
+    const nodeTestFiles = pkg.scripts['test:scripts']
+      .split(' ')
+      .filter((argument: string) => argument.endsWith('.test.mjs'));
+    expect(vitestConfig.test?.exclude).toEqual(expect.arrayContaining(nodeTestFiles));
+  });
+
+  it('publishes an app image only when the verified push changed an image input', async () => {
+    const workflow = await readFile(
+      new URL('../.github/workflows/cicd.yml', import.meta.url),
+      'utf8',
+    );
+
+    expect(workflow).toContain('image-inputs-changed: ${{ steps.image-inputs.outputs.changed }}');
+    expect(workflow).toContain('id: image-inputs');
+    expect(workflow).toContain('run: node scripts/image-build-inputs.mjs');
+    expect(workflow).toContain("needs.verify.outputs.image-inputs-changed == 'true'");
   });
 
   it('reports specs lock drift weekly without blocking and without a floating checkout', async () => {
