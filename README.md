@@ -1,6 +1,6 @@
 # open-4wd-pinning
 
-[![CI](https://github.com/xjustloveux/open-4wd-pinning/actions/workflows/cicd.yml/badge.svg?branch=master)](https://github.com/xjustloveux/open-4wd-pinning/actions/workflows/cicd.yml) [![License: MIT](docs/badges/license-mit.svg)](LICENSE)
+[![CI](https://github.com/xjustloveux/open-4wd-pinning/actions/workflows/cicd.yml/badge.svg?branch=master)](https://github.com/xjustloveux/open-4wd-pinning/actions/workflows/cicd.yml)
 
 Open4WD 的 pinning 節點公版 Template。節點可依營運者政策保存帳本、檢查點、cold match
 partitions 與 UGC，並可選擇提供 bootstrap、受控 UGC pin/unpin、DMCA 與透明度能力。
