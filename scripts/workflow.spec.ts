@@ -2,6 +2,21 @@ import { readdir, readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 
 describe('pre-public pinning CI', () => {
+  it('publishes the primary CI and repo-local MIT badges from the README', async () => {
+    const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+    expect(readme).toContain(
+      '[![CI](https://github.com/xjustloveux/open-4wd-pinning/actions/workflows/cicd.yml/badge.svg?branch=master)](https://github.com/xjustloveux/open-4wd-pinning/actions/workflows/cicd.yml)',
+    );
+    expect(readme).toContain('[![License: MIT](docs/badges/license-mit.svg)](LICENSE)');
+
+    const license = await readFile(
+      new URL('../docs/badges/license-mit.svg', import.meta.url),
+      'utf8',
+    );
+    expect(license).toMatch(/<svg[^>]+role="img"[^>]+aria-label="license: MIT"/u);
+    expect(license).not.toMatch(/<(?:script|image)\b|\bhref=["']https?:/iu);
+  });
+
   it('only gives the Graphify release job write access for an official master push', async () => {
     const workflow = await readFile(
       new URL('../.github/workflows/graphify-release.yml', import.meta.url),
