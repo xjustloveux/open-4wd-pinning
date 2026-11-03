@@ -20,6 +20,7 @@ import type {
 import { err, ok } from '@open4wd/interfaces';
 import {
   deriveKeyPair,
+  isAcceptablePublicKey,
   peerIdToPublicKey,
   publicKeyToPeerId,
   signMessage,
@@ -95,6 +96,16 @@ function requireNicknameSnapshot(value: string): string {
   return validation.value;
 }
 
+/**
+ * 由 seed 派生 profile 身分金鑰對；公鑰須通過身分入口檢查（D-20261030-02）。
+ * 誠實派生不會得到小階公鑰，此檢查屬防禦性。
+ */
+function deriveIdentityKeyPair(seed: Uint8Array): KeyPair {
+  const keyPair = deriveKeyPair(seed);
+  if (!isAcceptablePublicKey(keyPair.publicKey)) throw new Error('派生公鑰不可作為身分');
+  return keyPair;
+}
+
 /** 管理加密 profile、解鎖身分與所有 master-key 簽署操作。 */
 export class Open4wdKeyManager implements KeyManager {
   /** 加密 profile 與身分 container 的持久層。 */
@@ -107,6 +118,8 @@ export class Open4wdKeyManager implements KeyManager {
   private current: { profile: ProfileMetadata; keyPair: KeyPair } | null = null;
   /** 可選的硬體簽署 provider；存在時優先處理支援的操作。 */
   private hardware: HardwareKeyProvider | null = null;
+  /** 硬體提供者回報公鑰的入口檢查結果；首次簽章時取得並快取，換提供者時重置。 */
+  private hardwareKeyAcceptable: Promise<boolean> | null = null;
 
   constructor(options: Open4wdKeyManagerOptions = {}) {
     this.store = options.store ?? new IndexedDbProfileStore();
@@ -138,7 +151,7 @@ export class Open4wdKeyManager implements KeyManager {
     if (!validateMnemonic(opts.mnemonic)) throw new Error('助記詞不合法');
     const nickname = requireNicknameSnapshot(opts.nickname);
     const seed = mnemonicToSeed(opts.mnemonic);
-    const peerId = publicKeyToPeerId(deriveKeyPair(seed).publicKey);
+    const peerId = publicKeyToPeerId(deriveIdentityKeyPair(seed).publicKey);
     if (await this.store.findByPeerId(peerId)) {
       throw new Error('此身分已存在——請改用助記詞恢復');
     }
@@ -184,7 +197,14 @@ export class Open4wdKeyManager implements KeyManager {
 
   /** 使用目前已解鎖私鑰簽署訊息；未解鎖時拒絕而不嘗試存取持久資料。 */
   async sign(message: Uint8Array): Promise<Signature> {
-    if (this.hardware) return this.hardware.sign(message);
+    if (this.hardware) {
+      const hardware = this.hardware;
+      this.hardwareKeyAcceptable ??= hardware
+        .getPublicKey()
+        .then(isAcceptablePublicKey, () => false);
+      if (!(await this.hardwareKeyAcceptable)) throw new Error('硬體金鑰的公鑰不可作為身分');
+      return hardware.sign(message);
+    }
     return signMessage(this.requireUnlocked().keyPair.privateKey, message);
   }
 
@@ -258,7 +278,7 @@ export class Open4wdKeyManager implements KeyManager {
     const validatedNickname =
       nickname === undefined ? undefined : requireNicknameSnapshot(nickname);
     const seed = mnemonicToSeed(mnemonic);
-    const keyPair = deriveKeyPair(seed);
+    const keyPair = deriveIdentityKeyPair(seed);
     const peerId = publicKeyToPeerId(keyPair.publicKey);
     const encryptedSeed = await encryptSeed(seed, newPin, this.kdfParams);
 
@@ -390,6 +410,8 @@ export class Open4wdKeyManager implements KeyManager {
   /** 設定後續金鑰操作使用的硬體提供者；不會自動搬移既有軟體金鑰。 */
   setHardwareProvider(provider: HardwareKeyProvider | null): void {
     this.hardware = provider;
+    // 提供者回報的公鑰是外部輸入：小階、全零或非正規編碼者在簽章前拒絕（D-20261030-02）
+    this.hardwareKeyAcceptable = null;
   }
 
   /** 驗證 PIN 並完成刪除前回呼後移除 profile 與其身分容器；任一步驟失敗時保留資料。 */

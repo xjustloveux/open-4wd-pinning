@@ -133,7 +133,8 @@ export interface MatchResultEvent extends BaseEvent {
   matchId: string;
   /** 完整 commitment/reveal proof；任何收件者可重算 seed、permutation 與逐回合 slot。 */
   gridProof: StartGridProof;
-  /** 總名次（由 rounds 重算驗證、deriveTotalRanking） */
+  /** 總名次（由 rounds＋disconnects 重算驗證、deriveTotalRanking）；forfeit 者整場
+   *  壓出回合積分、排在全部完賽者之後 */
   ranking: PeerId[];
   rounds: RoundResult[];
   /** 每回合自包含 consensus certificate；缺 quorum 為 null，任一 null 時不得鑄幣。 */

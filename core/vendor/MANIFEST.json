@@ -32,12 +32,12 @@
     {
       "path": "ledger/index.ts",
       "upstream": "src/ledger/index.ts",
-      "sha256": "82e081dd857f0476c19d1098744af83f338baf98adbe5a19a7e290aec597b4e4"
+      "sha256": "93ac7af18c54cf2201f099255c6478281c03fbfa6b48f86e7eca06721b7effe4"
     },
     {
       "path": "ledger/events.ts",
       "upstream": "src/ledger/events.ts",
-      "sha256": "c52f273138325e04e91a93980c01af58a3e8d65a8ce60240663e8e55975f4d4d"
+      "sha256": "0515005f3c55a9aede53f87b64c3aa6caaf93d94d6289946a9ef7b76e1b684b4"
     },
     {
       "path": "ledger/chain-identity.ts",
@@ -67,7 +67,7 @@
     {
       "path": "ledger/derive-utils.ts",
       "upstream": "src/ledger/derive-utils.ts",
-      "sha256": "07104864f927da4b72da7b50d7b3543705418c6f185f8676d82c5cd2872cdd1b"
+      "sha256": "aa4c27cbe5458f77451763e03114f02a19f68ae38ec92dc14274232de5f614cb"
     },
     {
       "path": "ledger/derived-state.ts",
@@ -87,7 +87,7 @@
     {
       "path": "ledger/consensus-anchor.ts",
       "upstream": "src/ledger/consensus-anchor.ts",
-      "sha256": "4e8af0bcbf43da795541b08fe93f48fd9859d1d245992dec140945fb8ae0bf89"
+      "sha256": "6aeaedac03bf7381c81c5fb769ebc07ac009d45c450a31fe6e670305bf7e6c56"
     },
     {
       "path": "ledger/serial-task-queue.ts",
@@ -202,7 +202,7 @@
     {
       "path": "ledger/ledger-event-schema.ts",
       "upstream": "src/ledger/ledger-event-schema.ts",
-      "sha256": "b965c1ee0b3a75c4c13a9af61f099ae8f8e63118e6ec77326086518b70a9ed1f"
+      "sha256": "9d97f382331f2d9bf540c5ff576e21081f3e354d70347ec4a581abbfe0013eaf"
     },
     {
       "path": "ledger/bounded-storage.ts",
@@ -317,12 +317,12 @@
     {
       "path": "key-manager/index.ts",
       "upstream": "src/key-manager/index.ts",
-      "sha256": "6417f35dbc8b2617e1b0f292999a2719cbd14a07420eea621d94e3ba649595d2"
+      "sha256": "11ce532a0d6482fbddf8f452d1af03cec9de8f6cbfb3dedc2044e55deb8864e3"
     },
     {
       "path": "key-manager/ed25519.ts",
       "upstream": "src/key-manager/ed25519.ts",
-      "sha256": "c394562859511276db8f605e4539f48af0cd205b88f15b6787e1c581930ce1c6"
+      "sha256": "405bfab851c176c01ce15aefaed472c785b37dc3d0f05d11224978462e304a0b"
     },
     {
       "path": "key-manager/signed-payload.ts",
@@ -362,7 +362,7 @@
     {
       "path": "key-manager/key-manager.ts",
       "upstream": "src/key-manager/key-manager.ts",
-      "sha256": "073c88c553dba26c514d8c961895db1698177a810aac2c75d46637c372a6e61d"
+      "sha256": "3e4d8b40ac03522f791c8b02b372be42de4bd08e70b6653bf2425ac9379e57a3"
     },
     {
       "path": "key-manager/identity-session-coordinator.ts",
@@ -392,7 +392,7 @@
     {
       "path": "interfaces/physics.ts",
       "upstream": "src/interfaces/physics.ts",
-      "sha256": "fd85a11202bdee022410127a521b0ab4accc409dd3d5bc55fa363993ccd1e4bf"
+      "sha256": "b09fa258b9580aaef2af0d18e3da7b96496afcfa929aa8a2134d7b643108316e"
     },
     {
       "path": "interfaces/asset-storage.ts",
@@ -452,7 +452,7 @@
     {
       "path": "system-constants/invariants.ts",
       "upstream": "src/system-constants/invariants.ts",
-      "sha256": "4764bac1b7e32b2d213a5131662524fa5a3861999bc583a8f51fb7e2594aa0ca"
+      "sha256": "2e7f094a844118a936e5284d1811eef04d7bc01c7e291425427eac38119b9a31"
     },
     {
       "path": "system-constants/protocol/index.ts",
@@ -462,12 +462,12 @@
     {
       "path": "system-constants/protocol/physics.ts",
       "upstream": "src/system-constants/protocol/physics.ts",
-      "sha256": "9e1c0029552ba0cab3457a878af36eda29913e8dadf0ccbdbd3c6d47b3b709b9"
+      "sha256": "f397d286f5d8603a3019f64efb3762c5fe03efcc2318ac8f2781354c8d03f9f7"
     },
     {
       "path": "system-constants/protocol/ugc.ts",
       "upstream": "src/system-constants/protocol/ugc.ts",
-      "sha256": "e6bfaf2f9bc955dd0d4797d06ef2cfe85c47897e8f38dc8107d336fc70e10e03"
+      "sha256": "724a3dbdef71bbe9b7072a8d9d468dae1d015b12ce2ef9e96c834fd393dd14c0"
     },
     {
       "path": "system-constants/protocol/vehicle-admission-policy.json",
@@ -507,7 +507,7 @@
     {
       "path": "system-constants/network/index.ts",
       "upstream": "src/system-constants/network/index.ts",
-      "sha256": "f3f9fa80db52d093896a76db6e8826659ac614ee04b1a109e016a6a1ed9b73bc"
+      "sha256": "8c1d6bc13d4132d1b2fd58c1d8cdb60d295f87e239045220b052c3b525b9d485"
     },
     {
       "path": "system-constants/network/signaling.ts",
@@ -527,12 +527,22 @@
     {
       "path": "system-constants/network/sync.ts",
       "upstream": "src/system-constants/network/sync.ts",
-      "sha256": "ae955f3e994c731ea3fb6fde33450b609cc45a02df8a831d055a647267aa5bd8"
+      "sha256": "ad7081f5cf2d35e426f01c0b289418b4a280303f84cff57a4534cc16f8c80281"
     },
     {
       "path": "system-constants/network/versioning.ts",
       "upstream": "src/system-constants/network/versioning.ts",
-      "sha256": "ebf008f173e586f677a639eee9d5db462b110b75558d86f4baedd63462754493"
+      "sha256": "e7b0f039e7404b6791080ffa84151690c29fc519ec82ff7ce1c9ba5907f4bdba"
+    },
+    {
+      "path": "system-constants/network/perf.ts",
+      "upstream": "src/system-constants/network/perf.ts",
+      "sha256": "c1df86ec6c5c1c7fa35e2353fc1ebe2d487aa91f9429bda9d14f47b4a8ce0f95"
+    },
+    {
+      "path": "system-constants/network/local-policy.ts",
+      "upstream": "src/system-constants/network/local-policy.ts",
+      "sha256": "3c50d927a1b53334164af9ef781b56d6c1b3a946490d072f4681075746326909"
     },
     {
       "path": "system-constants/ui/index.ts",
@@ -577,7 +587,7 @@
     {
       "path": "system-constants/ui/asset-policy.ts",
       "upstream": "src/system-constants/ui/asset-policy.ts",
-      "sha256": "78f64416c296514d1d810272ae515a5dec4685ab9c2d07b6ad24143d6e6648c0"
+      "sha256": "1c46b6b6d1ba734a51a234def5b443bcfbb71f8ff844276a76191ad8a8e7fecd"
     },
     {
       "path": "system-constants/ui/layout.ts",
@@ -607,7 +617,7 @@
     {
       "path": "builtin-assets/index.ts",
       "upstream": "src/builtin-assets/index.ts",
-      "sha256": "0863c70791bfe7e6c20a429c31cf305ff003e76d5a97efe86ab5be8a851c4f42"
+      "sha256": "06b05401e471b0024edddc0eeee9e7d9895f886764e0eb23679c754c39fa0812"
     },
     {
       "path": "builtin-assets/builtin-ids.ts",
@@ -632,7 +642,7 @@
     {
       "path": "builtin-assets/loadout.ts",
       "upstream": "src/builtin-assets/loadout.ts",
-      "sha256": "1c9b9003e682b79eb9d8a72086004071ddeef64c0b8ce5217e24d842e35bce0e"
+      "sha256": "382fae128c5eb006403ca137936a06649b8afb54e53f237653eddec13535c73f"
     },
     {
       "path": "builtin-assets/loadout-structure.ts",

@@ -10,6 +10,7 @@ export {
 export { generateMnemonic, mnemonicToSeed, validateMnemonic } from './mnemonic';
 export {
   deriveKeyPair,
+  isAcceptablePublicKey,
   peerIdToPublicKey,
   publicKeyToPeerId,
   signMessage,

@@ -16,11 +16,17 @@ export interface PhysicsEngine {
   /** 推進一 frame（固定 60Hz） */
   step(inputs: readonly PlayerInput[]): StepOutput;
   /**
-   * 建立可供 rollback/catch-up 使用的完整原子快照。
-   * @returns SavedState v1 二進位封裝；包含 sim、破壞歸因、weather、track entity lifecycle、immutable world config 與 Rapier world。
+   * 建立可供 rollback/catch-up 使用的完整原子快照；純讀取，不改變之後的模擬。
+   * @returns SavedState v1 二進位封裝；包含 sim、破壞歸因、weather、track entity lifecycle、immutable world config 與 Rapier world。回傳參照登記為本機自產。
    * @throws 當 JS metadata 與 Rapier topology 已不一致、無法形成可信快照時。
    */
-  saveState(): SavedState;
+  saveState(): OwnSavedState;
+  /**
+   * 判斷快照是否為本引擎目前世界以 saveState 自產、仍是同一份記憶體參照。
+   * @param state 待判斷的快照。
+   * @returns 本機自產時為 true；複製、外來或世界重建前的快照皆為 false。
+   */
+  isOwnSavedState(state: SavedState): state is OwnSavedState;
   /**
    * side-effect-free 檢查完整快照 schema、immutable topology 並取出 frame。
    * @param state 待檢查的 SavedState v1 bytes。
@@ -34,6 +40,14 @@ export interface PhysicsEngine {
    * @throws 快照畸形、版本/設定/拓撲不符或 Rapier 無法還原時。
    */
   loadState(state: SavedState): void;
+  /**
+   * 本機信任載入：只接受本引擎 saveState 自產、未離開本行程的快照，跳過原生拓樸、幾何、質量與
+   * runtime hash 核對；envelope 驗證與原子替換語意同 loadState。外來快照一律用 loadState。
+   * @param state saveState 回傳的同一份參照。
+   * @returns 無回傳值。
+   * @throws 快照不是本機自產（含型別斷言偽造的品牌）或 envelope 不符時。
+   */
+  loadOwnState(state: OwnSavedState): void;
   /**
    * 取得該 peer 本回合已驗證的 chip 技能 schema。
    * @param peerId 回合 roster 內的 peer。
@@ -97,6 +111,11 @@ export interface VehicleWeaponSpec {
   ammoCount?: number;
   /** Stage 3 bake 的作用中武器拓撲；runtime 不得推斷替代 sphere／box。 */
   physics?: WeaponPhysicsSpec;
+  /**
+   * launch 必填（D-20261025-01）：true＝預載彈發射前各自具獨立耐久；false＝屬武器零件。
+   * 非 launch 武器不得出現。
+   */
+  projectileIndependentDurability?: boolean;
 }
 
 /** 武器節點相對 vehicle root 的位置與四元數旋轉。 */
@@ -115,6 +134,25 @@ export interface DirectionalContactAreasM2 {
   readonly bottom: number;
 }
 
+/** 來源質心處、每公斤的主慣量（m²）及 proxy-local 主軸；接觸代理不得重算此分布。 */
+export interface SourceMassProperties {
+  readonly principalInertiaPerKgM2: Vec3;
+  readonly inertiaFrame: readonly [number, number, number, number];
+}
+
+/** 滾動面分類結果：derive 以全解析度網格判定為旋轉面時的圓柱形狀（asset-local）。 */
+export interface ProxyCylinderShape {
+  readonly kind: 'cylinder';
+  /** 擬合半徑（m）＝外緣支撐半徑；對 64 向支撐函數的最小值差 ≤ 圓度容差才成立。 */
+  readonly radiusM: number;
+  /** 沿軸半寬（m），涵蓋整個 proxy 的軸向範圍（保守側壁填滿）。 */
+  readonly halfHeightM: number;
+  /** 圓柱中心（asset-local）。 */
+  readonly centerM: Vec3;
+  /** 旋轉軸單位向量（asset-local）：輪類＝part Mount local +X、entity＝rotation_axis。 */
+  readonly axisLocal: Vec3;
+}
+
 /** 零件烘焙後單一 collider proxy 的來源、材質與質量。 */
 export interface PartPhysicsProxy {
   readonly nodeName: string;
@@ -130,13 +168,21 @@ export interface PartPhysicsProxy {
   /** 僅輪胎接觸區域使用的磨耗容量；非輪胎代理不存在。 */
   readonly wearCapacityJ?: number;
   readonly centroidM: Vec3;
+  readonly massProperties: SourceMassProperties;
   readonly pointsM: readonly Vec3[];
+  /** 僅 hinge 零件的滾動面：derive 判圓後給出，runtime 以此建 cylinder collider 取代凸 hull。 */
+  readonly shape?: ProxyCylinderShape;
+  /**
+   * 僅 tire／roller：被同部件判圓外圈完整包覆的質量件（D-20261026-01）。runtime 不建 collider，
+   * 質量性質換到 hinge body frame 計入；admission 依 manifest 幾何重判、不一致即拒收。
+   */
+  readonly contact?: 'none';
 }
 
 /** 武器專用且綁定穩定 proxy id 的 collider proxy。 */
 export type WeaponPhysicsProxy = Omit<
   PartPhysicsProxy,
-  'sourceNodeIndex' | 'thermalExchangeFactor' | 'thermalContactAreaM2'
+  'sourceNodeIndex' | 'thermalExchangeFactor' | 'thermalContactAreaM2' | 'contact'
 >;
 
 /** 連接武器 proxy 與父剛體的烘焙 joint。 */
@@ -179,6 +225,15 @@ export interface WeaponPhysicsProjectile {
   /** projectile 初始位置沿 weapon Axis +Z 到 source-local LaunchExit 平面的量化距離。 */
   readonly exitDistanceUm: number;
   readonly fluidPayload?: FluidProjectilePayload;
+  /** 僅彈體獨立耐久開啟時：以該彈自身 proxy 套現行零件熱公式烘焙的熱資料。 */
+  readonly durability?: ProjectileDurabilitySpec;
+}
+
+/** 可選彈體獨立耐久的單顆預載彈熱資料（與零件 geometry 同一公式；流體彈熱容為 0）。 */
+export interface ProjectileDurabilitySpec {
+  readonly heatCapacityJPerC: number;
+  readonly ambientConductanceWPerC: number;
+  readonly thermalLimitC: number | null;
 }
 
 /** active 武器完整的 proxy、joint、actuator 與 projectile 拓撲。 */
@@ -316,8 +371,31 @@ export interface TrackSpec {
   weatherSeed?: { readonly matchId: string; readonly roundIndex: number };
   /** 已准入具型別材質指派；`main` 是未列 mesh 節點的 fallback。 */
   materials?: readonly { meshNode: string; material: MaterialId }[];
+  /** 已准入的靜態碰撞體分段宣告（manifest 必填欄；無牆條帶時 wallStrips 為空陣列）。 */
+  collision: TrackCollisionSpec;
   /** 場地設定（真 GLB 時代由 convert 自 extras 解析；box 近似期宣告制）；省略＝純幾何、無 route 追蹤 */
   config?: TrackConfig;
+}
+
+/** 一條牆 sub-mesh 沿路線的截面環序列；相鄰兩環之間構成一段碰撞體。 */
+export interface TrackWallStrip {
+  /** 牆 sub-mesh 節點名；每條牆為獨立 region。 */
+  readonly meshNode: string;
+  /** 沿路線的截面環序列；至少 2 環，每環至少 3 點，各環點數與繞向一致。 */
+  readonly rings: readonly Vec3[][];
+}
+
+/** 場地靜態碰撞體分段的 manifest 層宣告。 */
+export interface TrackCollisionSpec {
+  /** 地面 XZ 格邊長（公尺）；合法範圍 6–16。 */
+  readonly groundCellM: number;
+  /** 牆條帶清單；無牆宣告時為空陣列。 */
+  readonly wallStrips: readonly TrackWallStrip[];
+  /**
+   * 牆條帶宣告與幾何不吻合而退回單顆碰撞體的節點名（宣告順序、不重複、不與 `wallStrips`
+   * 重疊）；runtime 對這些節點各建一顆不分塊的 trimesh。無退回時為空陣列。
+   */
+  readonly singleColliderNodes: readonly string[];
 }
 
 /** 場地圈數、邊界、重生與玩家容量的比賽設定。 */
@@ -346,7 +424,7 @@ export interface TrackWeatherExposureGrid {
   readonly cellM: readonly [number, number];
   /** 與重力相反的單位向量；定義暴露表面平面法線。 */
   readonly up: Vec3;
-  /** 沿 `up` 的 row-major 暴露頂面高度；null 表示沒有合格靜態 solid。 */
+  /** 沿 `up` 的 row-major 暴露頂面高度（m、量化到 1 mm）；null 表示沒有合格靜態 solid。 */
   readonly topM: readonly (number | null)[];
 }
 
@@ -384,6 +462,8 @@ export interface TrackEntityColliderProxy {
   pointsLocalM: Vec3[];
   /** collider local 六向投影面積；衝撞與 vehicle proxy 共用同式。 */
   contactAreasM2: DirectionalContactAreasM2;
+  /** 僅連續旋轉 kinematic entity 且節點幾何對旋轉軸判圓時給出；runtime 以 cylinder 取代 box。 */
+  shape?: ProxyCylinderShape;
 }
 
 /** 動態場地 entity 的質量與慣量摘要。 */
@@ -477,8 +557,15 @@ export interface SkillTriggerInput {
   skillId: SkillId;
   isHoldTick: boolean;
 }
-/** 可進入物理步進的離散玩家事件；目前只有技能觸發。 */
-export type InputEvent = SkillTriggerInput; // 目前唯一變體；保留 union 擴充位
+/**
+ * 離場事件：peer 在已簽輸入流內宣告自己於該幀起退出本回合（001117）。
+ * 必須單獨成幀（同幀不得夾帶技能事件）；離場後的輸入由引擎忽略。
+ */
+export interface LeaveInput {
+  type: 'leave';
+}
+/** 可進入物理步進的離散玩家事件：技能觸發或離場。 */
+export type InputEvent = SkillTriggerInput | LeaveInput;
 
 /** 8 種 skill enum */
 export type SkillId =
@@ -584,6 +671,8 @@ export interface VehicleState {
   weaponNodes?: readonly WeaponNodePose[];
   /** 每零件的疲勞、溫度與損壞狀態。 */
   parts: readonly PartState[];
+  /** 僅彈體獨立耐久開啟時（D-20261025-01）：每顆預載彈的耐久狀態；broken 為損傷事件、不計致毀。 */
+  weaponProjectiles?: readonly ProjectileState[];
   /** 0~100＝battery 剩餘／初始 × 100 */
   enduranceRemainingPct: number;
   /** 0~100＝目前線性可供輸出／configured output × 100。 */
@@ -600,6 +689,16 @@ export interface WeaponNodePose {
   readonly position: Vec3;
   readonly rotation: [number, number, number, number];
   readonly fired: boolean;
+}
+
+/** 單顆預載彈在彈體獨立耐久下的 deterministic 狀態。 */
+export interface ProjectileState {
+  readonly projectileIndex: number;
+  readonly fatigue: number;
+  readonly temperature: number;
+  readonly broken: boolean;
+  /** 發射前損毀的權威 fixed frame；未損毀為 null。 */
+  readonly breakFrame: number | null;
 }
 
 /** fatigue／temperature／broken 為 sim state、跨 peer deterministic */
@@ -627,6 +726,13 @@ export interface CollisionEvent {
 
 /** 物理引擎序列化快照 */
 export type SavedState = Uint8Array;
+
+declare const ownSavedStateBrand: unique symbol;
+/**
+ * 本行程 saveState 自產的快照（D-20261028-01）。品牌只做型別層防呆；引擎另以執行期登記核對，
+ * 型別斷言偽造的品牌仍會被 loadOwnState 拒絕。
+ */
+export type OwnSavedState = SavedState & { readonly [ownSavedStateBrand]: true };
 
 /** 防複製與 lineage 比對使用的幾何摘要。 */
 export interface MeshFingerprint {

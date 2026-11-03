@@ -103,6 +103,8 @@
     "system-constants/network/providers.ts",
     "system-constants/network/sync.ts",
     "system-constants/network/versioning.ts",
+    "system-constants/network/perf.ts",
+    "system-constants/network/local-policy.ts",
     "system-constants/ui/index.ts",
     "system-constants/ui/animation.ts",
     "system-constants/ui/audio.ts",
