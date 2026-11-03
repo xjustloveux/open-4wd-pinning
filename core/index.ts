@@ -74,4 +74,14 @@ export {
   peerIdToPublicKey,
   publicKeyToPeerId,
   verifyMessage as ed25519Verify,
+  deriveKeyPair,
+  signMessage,
 } from './vendor/key-manager/ed25519';
+
+// 契約測試用（001057）：ledger 事件 exact schema 與 start-grid 證明建構。
+export { isExactLedgerEvent } from './vendor/ledger/ledger-event-schema';
+export {
+  buildStartGridProof,
+  createGridCommitment,
+  gridLockedContextDigest,
+} from './vendor/matchmaking/start-grid';

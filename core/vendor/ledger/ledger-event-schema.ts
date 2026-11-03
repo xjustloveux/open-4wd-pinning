@@ -640,7 +640,7 @@ function versionInfo(value: unknown): boolean {
       'commit_hash',
     ]) &&
     bytes(value['client_version'], 64) &&
-    bytes(value['rapier_version'], 64) &&
+    bytes(value['rapier_version'], 128) &&
     bytes(value['protocol_version'], 64) &&
     integer(value['derive_logic_version']) &&
     integer(value['builtin_assets_version']) &&

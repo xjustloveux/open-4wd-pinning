@@ -13,9 +13,58 @@ export const PHYSICS_HARD_CCD_ENABLED = true;
 export const PHYSICS_CCD_MAX_SUBSTEPS = 2;
 /** soft CCD 預測距離；0 明確停用 predictive constraints。 */
 export const PHYSICS_SOFT_CCD_PREDICTION_M = 0;
+/**
+ * hard CCD 對持續接觸 pair 的處理（D-20261026-02、D-20261027-02）：2＝固定目標先以完整形狀求 TOI、命中另一個面
+ * 才接受，否則改掃 collider 形狀質心的核心球；目標為 kinematic 或 dynamic 剛體時照父代以完整形狀求 TOI。
+ * 0＝完整形狀、1＝動態目標也只掃核心球，兩者只供 kernel 有限等價驗證。原生整合參數的共識欄位，進快照並於
+ * restore 驗證；30° 與核心比例是 kernel 內固定常數。
+ */
+export const PHYSICS_CCD_PERSISTENT_CONTACT_POLICY = 2;
+/**
+ * Simplified（twist）接觸 normal 求解順序（D-20261027-01）：1＝與順序無關（2 點精確 2×2、3 點以上正反兩序平均，
+ * 反彈同規則）；0＝逐點依 manifold 排序（父代行為），只供 kernel 有限等價驗證。原生整合參數的共識欄位，
+ * 進快照並於 restore 驗證；條件門檻 0.01 與平均規則是 kernel 內固定規則。
+ */
+export const PHYSICS_CONTACT_NORMAL_ORDER_POLICY = 1;
+/**
+ * 烘焙期旋轉面圓度容差：固定徑向支撐值與外緣半徑差 ≤ 此值判圓、烘 cylinder shape。
+ * 公版胎作者網格外緣頂點抖動實測 0.15mm（v15615），故取接觸容差 5×；
+ * 12 邊形級粗面（r=16mm 時 deviation ≈ 0.55mm 起）仍判非圓＝作者意圖。
+ */
+export const ROLLING_SURFACE_ROUNDNESS_EPSILON_M = 0.0005;
+/**
+ * 烘焙期被包覆質量件判定容差（D-20261026-01）：tire／roller 部件中，proxy 的每個 admitted 點到
+ * 判圓外圈軸線的距離 ≤ 半徑＋此值、軸向投影 ≤ 半寬＋此值即只承載質量、不建 collider。
+ * 與 D-20261021-02 的同軸包含容差一致（10 µm）。
+ */
+export const ENCLOSED_PROXY_TOLERANCE_M = 0.00001;
+/**
+ * bounded-step 接受容差（D-20261028-05）：原生 jointConstraintErrors 的關節錨點線性誤差與旋轉表面位移
+ * 都 ≤ 此值、且 CCD 查詢已判定時接受該段試算，否則還原並二分重試。兩者共用同一值；改值會改變軌跡。
+ */
+export const BOUNDED_STEP_TOLERANCE_M = Math.fround(0.0002);
+/**
+ * bounded-step 初始分段（D-20261028-05）：每幀先以兩個半幀試算。D-20261027-02 的動態薄目標保證是在
+ * 半幀上驗證的，整幀起跑會讓自旋刀片嚴格穿過 2 mm 板；改為整幀須另立 ADR 重新取得薄目標保證。
+ */
+export const BOUNDED_STEP_INITIAL_SPLIT = 'half' as const;
+/** bounded-step 二分細分的最大深度（D-20261028-05）。 */
+export const BOUNDED_STEP_DEPTH_LIMIT = 10;
+/** bounded-step 每幀全部分支共用的原生試算上限；用盡即整幀失敗（D-20261028-05）。 */
+export const BOUNDED_STEP_TRIAL_MAX = 63;
+/**
+ * bounded-step 細分停損（D-20261025-01）：連續此幀數都需要細分時，下一幀起接受不細分的試算結果，
+ * 直到某幀不再超出容差。依據（D-20261028-05，容差 0.2 mm）：公版三場八車 G／P0 起跑最長連續細分
+ * 8 幀、Gr 起跑 6 幀、三車三場 30 起跑完賽集合 9 幀，皆未觸發停損；0.1 mm 時 Gr 起跑曾達 82／95 幀。
+ * 60 幀（1 s）只保護真實卡住的情境（001077 頂牆風暴）。
+ */
+export const BOUNDED_STEP_STALL_FRAMES = 60;
 /** projectile 完整 convex shape 越過 LaunchExit 平面後的額外離膛間隙。 */
 export const PROJECTILE_EXIT_CLEARANCE_M = 0.001;
-export const SOLVER_VELOCITY_ITERATIONS = 8;
+/** 已採用原生 profile 的 solver 外層迭代數。 */
+export const SOLVER_VELOCITY_ITERATIONS = 4;
+/** 已採用原生 profile 的每外層內部 PGS 迭代數。 */
+export const SOLVER_INTERNAL_PGS_ITERATIONS = 25;
 export const INTEGER_SCALE = 1000; // 1mm 精度
 export const MAX_RIGID_BODIES_PER_RACE = 512;
 /** 以法向 impulse 為基礎的滾動阻力比例；初始 playtest 校準。 */
@@ -79,7 +128,7 @@ export const CHASSIS_SOLVER_SAFETY_LIMITS = Object.freeze({
 export const K_PASSIVE_EFFECT_MAX_PCT = 30; // 初估；被動武器加持三因子公式的封頂係數
 export const K_CHIP_SKILL_WASTE_HEAT = 0.001; // 電池成本 J → 晶片熱量 J
 export const K_BATTERY_SKILL_WASTE_HEAT = 0.02; // 電池成本 J → 電池熱量 J
-export const K_BATTERY_PASSIVE = 0.15; // 實際供能 W → battery heat W 的比例
+export const K_BATTERY_PASSIVE = 0.02; // 實際供能 W → battery heat W 的比例
 export const K_MOTOR_HEAT = 0.2; // motor 實際輸入 W → heat W 的比例
 export const K_TORQUE_FROM_W = 0.0002; // 公版最弱 speed 車可由靜止爬 7.38% 起跑坡
 export const K_SPEED_FROM_W = 0.015; // 初估；m/s/W（speed 配置極速 ≈8.4 m/s）

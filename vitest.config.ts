@@ -11,6 +11,9 @@ export default defineConfig({
     },
   },
   test: {
+    // 限制同時 fork 數為 8：預設約為核心數減一（32 核即約 31 個），各 fork 同時載入 libp2p／helia 等重模組，
+    // 資源壓力下 fork 會被系統結束而出現 Worker exited unexpectedly（001116，連跑 5 次崩 2 次）
+    maxWorkers: 8,
     // 整合／e2e 測試各自獨立設定檔管理（pnpm test:integration／pnpm e2e），不進本套件
     exclude: [
       ...configDefaults.exclude,

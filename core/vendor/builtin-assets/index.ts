@@ -26,6 +26,7 @@ export {
 export {
   ROLLER_POSITIONS,
   TIRE_POSITIONS,
+  attachmentCorrectionForSlot,
   builtinRefsIn,
   loadoutRefs,
   loadoutSlots,

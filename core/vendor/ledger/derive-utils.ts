@@ -1,11 +1,12 @@
 /**
  * Derive 純函式群 — ⭐所有 time-based derive 一律 consensusNow、禁 Date.now()
  * （跨 peer 機器時鐘不同＝derive 分叉）。partition 切分＝UTC quarter 純函數；
- * deriveTotalRanking＝consensus-critical（簽章者各自重算驗 ranking、防主 peer 偽造）。
+ * deriveTotalRanking＝consensus-critical（簽章者各自重算驗 ranking、防主 peer 偽造；
+ * forfeit 者整場壓出回合積分、排總名次末位）。
  */
 import type { CID, PeerId, Timestamp } from '@open4wd/interfaces';
 import { loadoutRefs, type PartRef } from '../builtin-assets';
-import type { MatchResultEvent, RoundResult } from './events';
+import type { DisconnectInfo, MatchResultEvent, RoundResult } from './events';
 
 /** P2P deterministic「現在」＝已見事件最大 timestamp（空 ledger 回 0） */
 export function consensusNow(events: readonly { timestamp: Timestamp }[]): Timestamp {
@@ -63,17 +64,91 @@ export function collectAllUgcUsedInMatch(match: {
   return cids;
 }
 
+/** 整場 forfeit 名單：開賽名單內的 disconnects；同一 peer 多筆取最早 disconnectedAt。 */
+function forfeitTimesOf(
+  roster: readonly PeerId[],
+  disconnects: readonly Pick<DisconnectInfo, 'peerId' | 'disconnectedAt'>[],
+): ReadonlyMap<PeerId, Timestamp> {
+  const inRoster = new Set(roster);
+  const times = new Map<PeerId, Timestamp>();
+  for (const { peerId, disconnectedAt } of disconnects) {
+    if (!inRoster.has(peerId)) continue; // 倒數期間斷線者不在開賽名單、不進名次
+    const known = times.get(peerId);
+    if (known === undefined || disconnectedAt < known) times.set(peerId, disconnectedAt);
+  }
+  return times;
+}
+
 /**
- * 總名次（consensus-critical）：線性回合積分 roundPoints=P−k+1 加總
- * → 積分高到低；tiebreak ①總完成時間少到多（DNF 計 durationLimit）②PeerId 字典序。
+ * 單回合積分（整場 forfeit 壓縮）：forfeit 者自回合名次移除、不得分；其餘依壓縮後
+ * 名次 k 得 P−k+1（P＝開賽人數、不縮減）。回傳只含該回合非 forfeit 者。
  */
-export function deriveTotalRanking(rounds: RoundResult[]): PeerId[] {
-  const playerCount = rounds[0]!.ranking.length;
-  const points = (peer: PeerId): number =>
-    rounds.reduce((sum, round) => sum + (playerCount - round.ranking.indexOf(peer)), 0);
-  const totalTime = (peer: PeerId): number =>
-    rounds.reduce((sum, round) => sum + (round.finishTimes[peer] ?? 0), 0);
-  return [...rounds[0]!.ranking].sort(
-    (a, b) => points(b) - points(a) || totalTime(a) - totalTime(b) || (a < b ? -1 : a > b ? 1 : 0),
-  );
+export function deriveRoundPoints(
+  round: Pick<RoundResult, 'ranking'>,
+  playerCount: number,
+  forfeited: ReadonlySet<PeerId>,
+): ReadonlyMap<PeerId, number> {
+  const points = new Map<PeerId, number>();
+  for (const peer of round.ranking)
+    if (!forfeited.has(peer)) points.set(peer, playerCount - points.size);
+  return points;
+}
+
+/** 整場積分、總時間與總名次（同一份推導；結算、評分、連勝與頁面摘要共用）。 */
+export interface MatchStandings {
+  /** 總名次：非 forfeit 者在前、forfeit 者在後 */
+  ranking: PeerId[];
+  /** P＝開賽人數（首回合名次長度） */
+  playerCount: number;
+  forfeited: ReadonlySet<PeerId>;
+  /** 整場總積分；forfeit 者為 0 */
+  points: ReadonlyMap<PeerId, number>;
+  /** 總完成時間（DNF 回合計時限）；只含非 forfeit 者 */
+  totalTimeMs: ReadonlyMap<PeerId, number>;
+}
+
+const comparePeerId = (a: PeerId, b: PeerId): number => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
+ * 整場推導（consensus-critical）：各回合先移除 forfeit 者，非 forfeit 者依壓縮後名次
+ * 計 P−k+1 加總；總名次＝非 forfeit 者（積分高到低 → 總時間少到多 → PeerId）後接
+ * forfeit 者（disconnectedAt 早到晚 → PeerId）。
+ */
+export function deriveMatchStandings(
+  rounds: readonly RoundResult[],
+  disconnects: readonly Pick<DisconnectInfo, 'peerId' | 'disconnectedAt'>[],
+): MatchStandings {
+  const roster = rounds[0]!.ranking;
+  const playerCount = roster.length;
+  const forfeitTimes = forfeitTimesOf(roster, disconnects);
+  const forfeited: ReadonlySet<PeerId> = new Set(forfeitTimes.keys());
+  const points = new Map<PeerId, number>(roster.map((peer) => [peer, 0]));
+  const totalTimeMs = new Map<PeerId, number>();
+  for (const peer of roster) if (!forfeited.has(peer)) totalTimeMs.set(peer, 0);
+  for (const round of rounds) {
+    for (const [peer, value] of deriveRoundPoints(round, playerCount, forfeited))
+      points.set(peer, (points.get(peer) ?? 0) + value);
+    for (const [peer, total] of totalTimeMs)
+      totalTimeMs.set(peer, total + (round.finishTimes[peer] ?? 0));
+  }
+  const finishers = roster
+    .filter((peer) => !forfeited.has(peer))
+    .sort(
+      (a, b) =>
+        points.get(b)! - points.get(a)! ||
+        totalTimeMs.get(a)! - totalTimeMs.get(b)! ||
+        comparePeerId(a, b),
+    );
+  const forfeits = roster
+    .filter((peer) => forfeited.has(peer))
+    .sort((a, b) => forfeitTimes.get(a)! - forfeitTimes.get(b)! || comparePeerId(a, b));
+  return { ranking: [...finishers, ...forfeits], playerCount, forfeited, points, totalTimeMs };
+}
+
+/** 總名次（consensus-critical）：`deriveMatchStandings` 的 ranking。 */
+export function deriveTotalRanking(
+  rounds: readonly RoundResult[],
+  disconnects: readonly Pick<DisconnectInfo, 'peerId' | 'disconnectedAt'>[],
+): PeerId[] {
+  return deriveMatchStandings(rounds, disconnects).ranking;
 }

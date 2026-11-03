@@ -60,9 +60,12 @@ export {
   collectAllUgcUsedInMatch,
   consensusNow,
   currentHotPartitions,
+  deriveMatchStandings,
+  deriveRoundPoints,
   deriveTotalRanking,
   partitionKeyOf,
   type ColdPartitionKey,
+  type MatchStandings,
 } from './derive-utils';
 export {
   applyEvent,

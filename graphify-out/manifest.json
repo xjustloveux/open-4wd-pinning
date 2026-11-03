@@ -76,8 +76,12 @@
     "semantic_hash": "c770b95a168a2e30b0773149d24ac5f7"
   },
   "core/index.ts": {
-    "ast_hash": "1f8fab7cb0908b5f6af782bad2878995",
-    "semantic_hash": "1f8fab7cb0908b5f6af782bad2878995"
+    "ast_hash": "fca9709bfce45d563ce33ad8a64de181",
+    "semantic_hash": "fca9709bfce45d563ce33ad8a64de181"
+  },
+  "core/rapier-version-contract.spec.ts": {
+    "ast_hash": "9729bce04eec9b35639d2e35e7bf2cc2",
+    "semantic_hash": "9729bce04eec9b35639d2e35e7bf2cc2"
   },
   "core/vendor-integrity.spec.ts": {
     "ast_hash": "b14cf42eb10af0c0c9d278eaa0a31e28",
@@ -536,8 +540,8 @@
     "semantic_hash": "723838b9ee3e056a71b77df2124edb26"
   },
   "vitest.config.ts": {
-    "ast_hash": "3e5813b22e3f97ff7f0609ca041be05a",
-    "semantic_hash": "3e5813b22e3f97ff7f0609ca041be05a"
+    "ast_hash": "c31386541cc0a5fa42f5267274e728c6",
+    "semantic_hash": "c31386541cc0a5fa42f5267274e728c6"
   },
   "vitest.e2e.config.ts": {
     "ast_hash": "b8816de01119cf89c2e6372c36be5ba6",

@@ -13,6 +13,19 @@ export type TirePosition = (typeof TIRE_POSITIONS)[number];
 /** 六顆可選導輪可使用的位置 id。 */
 export type RollerPosition = (typeof ROLLER_POSITIONS)[number];
 
+/**
+ * 組裝槽位相對於 canonical part mount 的額外剛體旋轉（xyzw）。
+ * 輪胎以 local +X 為外側；左側在 mount 原點繞 Y 軸轉 180°，右側維持原向。
+ */
+export function attachmentCorrectionForSlot(
+  slot: string,
+  type: PartType,
+): readonly [number, number, number, number] {
+  return type === 'tire' && (slot === 'tire:FL' || slot === 'tire:RL')
+    ? [0, 1, 0, 0]
+    : [0, 0, 0, 1];
+}
+
 /** 一輛車的必要與可選零件引用集合。 */
 export interface VehicleLoadout {
   chassis: PartRef;

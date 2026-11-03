@@ -6,7 +6,11 @@ export function consensusAnchorQuorum(presentCount: number): number {
   return Math.floor(presentCount / 2) + 1;
 }
 
-/** 依 rollback buffer 計算 terminal frame 前最新可終局對齊幀。 */
+/**
+ * 依 rollback buffer 計算 terminal frame 前最新可終局對齊幀。
+ * 式子以輸入受理窗 R（`ROLLBACK_FRAME_BUFFER_DEFAULT`，現為 2）定義 finality；R 改值只移動尾窗，
+ * pinning vendor 的同名檔須同步（D-20261028-03）。
+ */
 export function latestFinalAnchorFrame(terminalFrame: number): number {
   const finalFrame = Math.max(0, terminalFrame - Network.sync.ROLLBACK_FRAME_BUFFER_DEFAULT);
   return (
