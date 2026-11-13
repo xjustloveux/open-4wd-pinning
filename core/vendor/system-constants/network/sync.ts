@@ -113,5 +113,5 @@ export const PEER_DESYNC_TOLERANCE_FRAMES = 30; // checksum 等待容差（逾�
 /** 15 秒重連窗在 60Hz 下最多可合理落後的幀數；超出者不得以前跳快照注入。 */
 export const CATCH_UP_MAX_ADVANCE_FRAMES = 900;
 export const CHECKSUM_PAST_HORIZON_FRAMES = SNAPSHOT_INTERVAL_FRAMES + PEER_DESYNC_TOLERANCE_FRAMES;
-export const DESYNC_STRIKE_LIMIT = 3; // 連續 mismatch 達此值 → persistent-desync（不 rollback、僅累積）
+export const DESYNC_STRIKE_LIMIT = 3; // 連續 mismatch 達此值 → persistent-desync（不 rollback；有成員缺席時少數端另行重同步）
 export const SPECTATOR_BROADCAST_INTERVAL_MS = 100; // 觀戰 10Hz

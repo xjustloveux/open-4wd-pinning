@@ -49,8 +49,16 @@ export const TRACK_GLB_SIZE_MAX_MB = 80;
 export const TRACK_VISUAL_TRIANGLE_COUNT_MAX = 3_000_000;
 export const TRACK_COLLIDER_TRIANGLE_COUNT_MAX = 500_000;
 export const TRACK_COLLIDER_REGION_COUNT_MAX = 256;
-/** 場地地面碰撞體的 XZ 格邊長預設值（公尺）；manifest 可在 6–16 內宣告。 */
-export const TRACK_GROUND_CELL_M = 8;
+/**
+ * 場地地面碰撞體的 XZ 格邊長預設值（公尺）。CCD TOI 對靜態 trimesh 的成本隨 piece 三角數放大：
+ * 公版八車（heavy8、1,200 幀）每幀實付 P50 在 8 m 時都市 79 ms、叢林 51 ms，4 m 為 39／24 ms；2 m 只讓
+ * 都市再降約兩成，叢林與雪地反而略升且快照更大（issue 001074、D-20261105-01）。
+ */
+export const TRACK_GROUND_CELL_M = 4;
+/** manifest `collision.groundCellM` 的合法下限（公尺）。 */
+export const TRACK_GROUND_CELL_MIN_M = 2;
+/** manifest `collision.groundCellM` 的合法上限（公尺）。 */
+export const TRACK_GROUND_CELL_MAX_M = 16;
 /** 場地牆條帶沿路線方向的預設分段長度（公尺）。 */
 export const TRACK_WALL_SEGMENT_LENGTH_M = 0.25;
 /** 場地牆條帶沿路線方向的單段長度上限（公尺）。 */

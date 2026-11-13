@@ -21,6 +21,10 @@ export const RACE_LAP_COUNT_MAX = 10;
 export const STARTUP_COUNTDOWN_SEC = 3;
 /** 正式賽前倒數相鄰數字的單調時鐘間隔。 */
 export const STARTUP_COUNTDOWN_TICK_MS = 1000;
+/** 每一回合倒數前固定賽道巡禮的鏡位數。 */
+export const STARTUP_TOUR_SHOT_COUNT = 3;
+/** 賽道巡禮每個鏡位的停留時間；固定巡禮總長＝鏡位數 × 此值。 */
+export const STARTUP_TOUR_SHOT_MS = 2000;
 export const LAUNCH_FIRE_INTERVAL_MS = 250; // 初估、待 playtest
 /** 場上已無未完賽存活車後，失能車滑行等待的最長回合級視窗。 */
 export const ROUND_ENDGAME_MAX_FRAMES = 120; // 2.0 秒；初估、待 playtest

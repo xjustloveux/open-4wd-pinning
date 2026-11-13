@@ -387,7 +387,7 @@ export interface TrackWallStrip {
 
 /** 場地靜態碰撞體分段的 manifest 層宣告。 */
 export interface TrackCollisionSpec {
-  /** 地面 XZ 格邊長（公尺）；合法範圍 6–16。 */
+  /** 地面 XZ 格邊長（公尺）；合法範圍 2–16（`TRACK_GROUND_CELL_MIN_M`／`TRACK_GROUND_CELL_MAX_M`）。 */
   readonly groundCellM: number;
   /** 牆條帶清單；無牆宣告時為空陣列。 */
   readonly wallStrips: readonly TrackWallStrip[];
@@ -669,10 +669,17 @@ export interface VehicleState {
   angularVelocity: Vec3;
   /** 呈現用有界作用中武器 body pose；節點名稱只來自 baked spec。 */
   weaponNodes?: readonly WeaponNodePose[];
+  /**
+   * 呈現用：未損壞 tire／roller 相對車體的轉動狀態，依 partIndex 遞增；沒有這類零件時缺省。
+   * 只隨 StepOutput 輸出，由當下剛體狀態推得，不進快照與狀態雜湊。
+   */
+  wheelHinges?: readonly WheelHingeState[];
   /** 每零件的疲勞、溫度與損壞狀態。 */
   parts: readonly PartState[];
   /** 僅彈體獨立耐久開啟時（D-20261025-01）：每顆預載彈的耐久狀態；broken 為損傷事件、不計致毀。 */
   weaponProjectiles?: readonly ProjectileState[];
+  /** 呈現用：主動發射型武器未發射且未損毀的預載彈數；其餘武器缺省。只隨 StepOutput 輸出。 */
+  weaponAmmoRemaining?: number;
   /** 0~100＝battery 剩餘／初始 × 100 */
   enduranceRemainingPct: number;
   /** 0~100＝目前線性可供輸出／configured output × 100。 */
@@ -689,6 +696,37 @@ export interface WeaponNodePose {
   readonly position: Vec3;
   readonly rotation: [number, number, number, number];
   readonly fired: boolean;
+}
+
+/**
+ * 單顆 tire／roller 繞 hinge 軸相對車體的轉動狀態。hinge 軸通過 chassis 端 Mount 位置、
+ * 方向為該 Mount 的 local +X；零件在車輛空間的姿態＝繞此軸轉 angleRad 後的建構姿態。
+ */
+export interface WheelHingeState {
+  /** 與 VehicleState.parts 的 partIndex 同鍵。 */
+  readonly partIndex: number;
+  /** 繞 hinge 軸的相位角，範圍 (−π, π]；建構姿態為 0，整圈數不保留。 */
+  readonly angleRad: number;
+  /** 相對車體繞 hinge 軸的角速度（rad/s）；呈現端用它還原兩次取樣之間轉過的整圈數。 */
+  readonly angularVelocityRadS: number;
+}
+
+/**
+ * 兩次取樣之間輪子實際轉過的角度：相位差加上整圈數，整圈數取使結果最接近 expectedDeltaRad 者。
+ * 高轉速下一次取樣間隔可轉超過半圈，單看相位差會把方向與速率判錯。
+ * @param fromAngleRad 前一次取樣的相位角。
+ * @param toAngleRad 後一次取樣的相位角。
+ * @param expectedDeltaRad 由角速度乘上取樣間隔估計的轉角；非有限值視為 0（取最短弧）。
+ */
+export function wheelHingeAngleDelta(
+  fromAngleRad: number,
+  toAngleRad: number,
+  expectedDeltaRad: number,
+): number {
+  const expected = Number.isFinite(expectedDeltaRad) ? expectedDeltaRad : 0;
+  const turn = Math.PI * 2;
+  const phase = toAngleRad - fromAngleRad;
+  return phase + Math.round((expected - phase) / turn) * turn;
 }
 
 /** 單顆預載彈在彈體獨立耐久下的 deterministic 狀態。 */

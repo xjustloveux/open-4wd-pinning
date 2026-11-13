@@ -1,8 +1,13 @@
 /** 跟車鏡頭——純本機 presentation 常數，不進物理、網路或共識。 */
 export const FOLLOW_CAMERA_DISTANCE_MIN_M = 0.3;
-export const FOLLOW_CAMERA_DISTANCE_MAX_M = 2;
+export const FOLLOW_CAMERA_DISTANCE_MAX_M = 5;
 export const FOLLOW_CAMERA_DISTANCE_DEFAULT_M = 0.5;
-export const FOLLOW_CAMERA_DISTANCE_STEP_M = 0.05;
+/** 跟車距離在遠距門檻以內（含）的單步調整量。 */
+export const FOLLOW_CAMERA_DISTANCE_STEP_M = 0.1;
+/** 跟車距離步距切換門檻：超過此距離改用遠距步距。 */
+export const FOLLOW_CAMERA_DISTANCE_FAR_THRESHOLD_M = 2;
+/** 跟車距離超過遠距門檻後的單步調整量。 */
+export const FOLLOW_CAMERA_DISTANCE_FAR_STEP_M = 0.2;
 export const FOLLOW_CAMERA_ELEVATION_RAD = Math.atan2(0.22, 0.45);
 export const FOLLOW_CAMERA_UPRIGHT_DOT_MIN = 0.5;
 export const FOLLOW_CAMERA_HORIZONTAL_EPSILON = 1e-4;
