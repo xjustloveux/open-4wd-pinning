@@ -132,6 +132,7 @@ export const K_BATTERY_PASSIVE = 0.02; // 實際供能 W → battery heat W 的�
 export const K_MOTOR_HEAT = 0.2; // motor 實際輸入 W → heat W 的比例
 export const K_TORQUE_FROM_W = 0.0002; // 公版最弱 speed 車可由靜止爬 7.38% 起跑坡
 export const K_SPEED_FROM_W = 0.015; // 初估；m/s/W（speed 配置極速 ≈8.4 m/s）
+export const DRIVE_REFERENCE_WHEEL_RADIUS_M = 0.016; // 扭矩換算推力的固定參考輪半徑（公版輪胎半徑）；與實際輪徑無關
 export const K_BOOST = 0.00065; // 初估；N·s／effect J（滿威力 ≈+3 m/s）
 export const K_BRAKE = 0.00065; // 初估
 export const K_JUMP = 0.00065; // 初估（≈0.3m 跳高）

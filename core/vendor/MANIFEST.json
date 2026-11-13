@@ -392,7 +392,7 @@
     {
       "path": "interfaces/physics.ts",
       "upstream": "src/interfaces/physics.ts",
-      "sha256": "b09fa258b9580aaef2af0d18e3da7b96496afcfa929aa8a2134d7b643108316e"
+      "sha256": "91f5177dd572950e7ad443061298243f3dcffef34566fe54d7e0309b4c27781a"
     },
     {
       "path": "interfaces/asset-storage.ts",
@@ -462,12 +462,12 @@
     {
       "path": "system-constants/protocol/physics.ts",
       "upstream": "src/system-constants/protocol/physics.ts",
-      "sha256": "f397d286f5d8603a3019f64efb3762c5fe03efcc2318ac8f2781354c8d03f9f7"
+      "sha256": "18984239329d16adbe691e4001e7b9a9657d9677cd198b7d43046945f17d194d"
     },
     {
       "path": "system-constants/protocol/ugc.ts",
       "upstream": "src/system-constants/protocol/ugc.ts",
-      "sha256": "724a3dbdef71bbe9b7072a8d9d468dae1d015b12ce2ef9e96c834fd393dd14c0"
+      "sha256": "cfae84519b5bdba3dd214721954dd3f5f5a7cf65c31843367e7d81bd4289b541"
     },
     {
       "path": "system-constants/protocol/vehicle-admission-policy.json",
@@ -502,7 +502,7 @@
     {
       "path": "system-constants/protocol/gameplay.ts",
       "upstream": "src/system-constants/protocol/gameplay.ts",
-      "sha256": "963e060288a065f39927ea41ca4b7a11969e3a4b9c5028500c47353c98bab29e"
+      "sha256": "ce5173a3bc99c6576158b42ddaa58d032aed90d8e02f2d7b09b9f48e1dcc3995"
     },
     {
       "path": "system-constants/network/index.ts",
@@ -527,12 +527,12 @@
     {
       "path": "system-constants/network/sync.ts",
       "upstream": "src/system-constants/network/sync.ts",
-      "sha256": "ad7081f5cf2d35e426f01c0b289418b4a280303f84cff57a4534cc16f8c80281"
+      "sha256": "be3fb8c8010d544ebcb69560927d5dd5694f8912a2b5db450245926cdbe50778"
     },
     {
       "path": "system-constants/network/versioning.ts",
       "upstream": "src/system-constants/network/versioning.ts",
-      "sha256": "e7b0f039e7404b6791080ffa84151690c29fc519ec82ff7ce1c9ba5907f4bdba"
+      "sha256": "540f7bf7fff7d9d5dca655f9a6261a76b739afb5f5631f19f1880bce8c1589c6"
     },
     {
       "path": "system-constants/network/perf.ts",
@@ -557,12 +557,12 @@
     {
       "path": "system-constants/ui/audio.ts",
       "upstream": "src/system-constants/ui/audio.ts",
-      "sha256": "076ee62490ca4c1c486b7f8a9ff71f712b459a4d612cc3e433cd31434b05b96b"
+      "sha256": "2499106b666e8cc3ac9fbff2c64e044f5e8a20df73dfb9f43a7bfa1d99f5349b"
     },
     {
       "path": "system-constants/ui/camera.ts",
       "upstream": "src/system-constants/ui/camera.ts",
-      "sha256": "0ca7977352d3319684dd00aad9b7c4af3164ac36b471efe079db9d2411c0cc75"
+      "sha256": "65ebaa3a0865eb521c747e3b1867369c551898069f9f5638f938c81206efbb54"
     },
     {
       "path": "system-constants/ui/fragments.ts",
