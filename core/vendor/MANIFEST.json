@@ -467,7 +467,7 @@
     {
       "path": "system-constants/protocol/ugc.ts",
       "upstream": "src/system-constants/protocol/ugc.ts",
-      "sha256": "cfae84519b5bdba3dd214721954dd3f5f5a7cf65c31843367e7d81bd4289b541"
+      "sha256": "b90be70c9181cbb072d17f1b1e972e88e478f41ec05a5d35306332316329b7d6"
     },
     {
       "path": "system-constants/protocol/vehicle-admission-policy.json",

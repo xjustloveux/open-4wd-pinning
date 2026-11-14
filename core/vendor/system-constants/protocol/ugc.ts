@@ -88,7 +88,10 @@ export const TRACK_CHECKPOINT_TRIGGER_MAX_AABB_RATIO = 0.1;
 export const START_GRID_SAFETY_MARGIN_M = 0.05;
 /** 起跑格中心間距＝整車寬上限＋安全邊距；與 editor auto_player_max 同式。 */
 export const START_GRID_CELL_WIDTH_M = VEHICLE_AABB_MAX_M[1] + START_GRID_SAFETY_MARGIN_M;
-/** 車體由 RP1 surface frame 沿 up 抬升，避免初始 collider 穿插。 */
+/**
+ * 車體由 RP1 surface frame 沿 up 抬升，避免初始 collider 穿插；掉出場地後回定位到 RespawnPoint
+ * 或起點時也沿該點的 up 抬升同一個量（issue 001405）。
+ */
 export const START_GRID_LIFT_M = 0.05;
 /** 終點定向平面的前後 crossing 容差。 */
 export const FINISH_GATE_PLANE_EPS_M = 0.001;
