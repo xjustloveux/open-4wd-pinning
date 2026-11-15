@@ -12,7 +12,7 @@ export const CLIENT_VERSION_CURRENT = '0.1.0' as ClientVersion;
  * 同套件版號但不同核心不得混場。generate:pwa 核對 file pin 的核心身份與實際安裝的 JS/WASM。
  */
 export const RAPIER_VERSION_CURRENT =
-  '0.20.0-open4wd+open4wd.fb3ee6c1fb378f4874478829d2281778a3fef50a971bdd5ace769647b580b2ef';
+  '0.20.0-open4wd+open4wd.ec9b5fad893d8dc9229d35ffa9e677f3ebc0910a48b85fd407db9c5ee06f0a62';
 /** DerivedState 推導邏輯版本（演算法變動＝連帶 client major） */
 export const DERIVE_LOGIC_VERSION_CURRENT = 1;
 /** 公版資產物理參數版本（參數變動＝連帶 client major；純美術不 bump） */
