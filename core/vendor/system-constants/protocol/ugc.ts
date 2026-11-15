@@ -23,6 +23,11 @@ export const VEHICLE_AABB_MAX_M = Object.freeze([0.25, 0.13, 0.1]) as readonly [
   number,
   number,
 ];
+/**
+ * chassis 的原點（整車的 root）可以落在 chassis 包圍盒外的最大距離（m）。比賽的位置判定與起跑、
+ * 回定位的擺放都以 root 為準，所以 root 必須在車身上；留 1 毫米是給幾何量化的誤差（issue 001409）。
+ */
+export const CHASSIS_ORIGIN_AABB_TOLERANCE_M = 0.001;
 /** 非輪胎零件最低點對四輪接地平面的最小離地高度（m）。 */
 export const VEHICLE_GROUND_CLEARANCE_MIN_M = 0.001;
 export const PART_MATERIAL_DENSITY_RATIO_MAX = 50;
