@@ -392,7 +392,7 @@
     {
       "path": "interfaces/physics.ts",
       "upstream": "src/interfaces/physics.ts",
-      "sha256": "91f5177dd572950e7ad443061298243f3dcffef34566fe54d7e0309b4c27781a"
+      "sha256": "17034ed8a2a42f4cbb8ea9b623ca158445d75863c7f0c674c1c14da8cd0851e4"
     },
     {
       "path": "interfaces/asset-storage.ts",
@@ -467,7 +467,7 @@
     {
       "path": "system-constants/protocol/ugc.ts",
       "upstream": "src/system-constants/protocol/ugc.ts",
-      "sha256": "84d4faf6be52a3f1b12e3ed7521805b49c23be3d6bdb317c66c74f2c54ffd11d"
+      "sha256": "b5690e1f59b039c15f450125702422c54812fd4a4e486fd80a4f1c03881b2ae6"
     },
     {
       "path": "system-constants/protocol/vehicle-admission-policy.json",
@@ -532,7 +532,7 @@
     {
       "path": "system-constants/network/versioning.ts",
       "upstream": "src/system-constants/network/versioning.ts",
-      "sha256": "54b268c91ce5959e62f07cc6c9fcd22c44214245629d15ace68b88d40c82acd6"
+      "sha256": "8a363ca5ae6c97fab44395c317b8ad8ba3aca81735bb871a16785234b4b44474"
     },
     {
       "path": "system-constants/network/perf.ts",
@@ -747,7 +747,7 @@
     {
       "path": "material-params/index.ts",
       "upstream": "src/material-params/index.ts",
-      "sha256": "717d3e7c17a15224ee7f8c3fb18271f334e0734dbd8aadb9f8833744d7c7e424"
+      "sha256": "690b7d0756428852cdf190e08f9c622cf33d1611f19c9561ed9a8197bfc33435"
     },
     {
       "path": "material-params/material-i18n.ts",
@@ -757,12 +757,12 @@
     {
       "path": "material-params/materials.ts",
       "upstream": "src/material-params/materials.ts",
-      "sha256": "58e0adf34bf56d5938762a6ff5fa4daf4dc2478a8d870bf6a2ad591165b8462d"
+      "sha256": "d56f63c2b694b94e49b956b1b8a17609dea94148e8dd3eb9bb84a489fd1c8310"
     },
     {
       "path": "material-params/material-rules.ts",
       "upstream": "src/material-params/material-rules.ts",
-      "sha256": "57cc82f65a2a08cef0c5c51ef1c99300f823ac01c87bc8ec03a62b4c96311b86"
+      "sha256": "d5f91623745fd7eddd18741533868048770829bf03c764a05d8dcea8c5a098ec"
     },
     {
       "path": "versioning/index.ts",

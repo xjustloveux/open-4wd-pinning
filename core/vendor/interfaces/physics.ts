@@ -466,6 +466,15 @@ export interface TrackEntityColliderProxy {
   shape?: ProxyCylinderShape;
 }
 
+/**
+ * entity 上的流體區：流體材質的 mesh 節點不建立實體碰撞體，改為跟著 entity 剛體的 sensor
+ * （issue 001419）。manifest 只記節點名與材質，幾何由引擎自場地 GLB 讀出。
+ */
+export interface TrackEntityFluidZone {
+  nodeName: string;
+  material: MaterialId;
+}
+
 /** 動態場地 entity 的質量與慣量摘要。 */
 export interface TrackEntityMassProperties {
   massGrams: number;
@@ -506,6 +515,8 @@ export interface TrackEntitySpec {
   initialPose: TrackEntityPose;
   visualNodes: string[];
   colliders: TrackEntityColliderProxy[];
+  /** 流體材質的節點（依節點名排序）；沒有流體節點時不出現這個欄位。 */
+  fluidZones?: TrackEntityFluidZone[];
   magnets: TrackEntityMagnetSource[];
   motion?: TrackEntityMotion;
   conveyor?: { velocityMps: number };
@@ -656,6 +667,10 @@ export interface TrackEntityState {
   fatigue: number;
   broken: boolean;
   breakFrame: number | null;
+  /** 最近一次瞬移（step 曲線切換到另一端，不經過中間位置）完成的幀；只供呈現，不是模擬狀態。 */
+  lastTeleportFrame?: number;
+  /** 旋轉 360 度的 step 物件：瞬移只有平移，旋轉是連續的；只供呈現。 */
+  continuousRotation?: true;
   fragments: readonly TrackFragmentState[];
 }
 
