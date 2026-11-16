@@ -9,6 +9,7 @@ export {
   type PartType,
 } from './materials';
 export {
+  findMagnetSourceMaterial,
   isMaterialAllowed,
   materialClass,
   materialsForScope,

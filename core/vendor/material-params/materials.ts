@@ -23,7 +23,7 @@ export interface MaterialDef {
   readonly thermal_limit: number | null; // °C；null＝無有意義熔點
   readonly rolling_resistance: number; // 基準 1.0；所有材質必填（fallback 防護）
 
-  // 磁性身分（三選一強制互斥；磁源強度由建模 Root Extras magnet_source_strength_n 決定）
+  // 磁性身分（三選一強制互斥；磁源強度由場地節點層 extras 的 magnet_source_strength_n 決定；零件不能是磁源，見 D-20261116-04）
   readonly magnetism_role: 'passive' | 'source' | 'none';
   readonly magnetic_susceptibility: number | null; // 0–1；僅 passive 有值、其餘必為 null
 
@@ -136,6 +136,15 @@ export function assertMaterialInvariants(materials: readonly MaterialDef[]): voi
         throw new Error(`material ${def.id}: passive 需 0–1 磁化率`);
     } else if (def.magnetic_susceptibility !== null) {
       throw new Error(`material ${def.id}: 非 passive 的磁化率必為 null`);
+    }
+
+    // 零件不能是磁源（D-20261116-04、issue 001415）：source 材質一律禁止用在車輛、不開零件類型例外，
+    // 日後新增車輛可用的 source 材質會在載入時失敗。
+    if (def.magnetism_role === 'source') {
+      if (!def.forbidden_scopes?.includes('vehicle'))
+        throw new Error(`material ${def.id}: source 必為 vehicle-forbidden`);
+      if (def.allowed_part_types !== undefined && def.allowed_part_types.length > 0)
+        throw new Error(`material ${def.id}: source 不可開放零件類型例外`);
     }
 
     if (def.is_fluid) {

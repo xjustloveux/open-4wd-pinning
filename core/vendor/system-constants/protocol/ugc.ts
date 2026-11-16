@@ -113,7 +113,13 @@ export const LAUNCH_AMMO_COUNT_MAX = 8;
 export const VORONOI_FRAGMENT_COUNT_MAX = 8;
 export const WIND_SPEED_MPS_MAX = 30;
 export const MAGNET_SOURCE_STRENGTH_N_MAX = 10;
+/** 場地不屬於 entity 的靜態磁源數量上限（D-20261116-05）；每幀磁力計算對每個磁源與每個目標各算一次。 */
+export const TRACK_STATIC_MAGNET_SOURCE_COUNT_MAX = 64;
+/** 每個場地 entity 的磁源數量上限（D-20261116-05）。 */
+export const TRACK_ENTITY_MAGNET_SOURCE_COUNT_MAX = 8;
 export const KINEMATIC_PERIOD_MS_MIN = 500; // 初估
+/** step 曲線終點與起點各自的最短停留時間（D-20261116-03）；換算 60Hz 為 30 幀。 */
+export const KINEMATIC_STEP_DWELL_MS_MIN = 500;
 export const KINEMATIC_AMPLITUDE_M_MAX = 20; // 初估
 export const CONVEYOR_VELOCITY_M_S_MAX = 10; // 初估
 export const FORK_SIMILARITY_THRESHOLD_PERCENT = 10;

@@ -3,7 +3,7 @@
  */
 import type { MaterialDef, PartType } from './materials';
 import { UI } from '@open4wd/system-constants';
-import { MATERIALS } from './materials';
+import { MATERIAL_BY_ID, MATERIALS } from './materials';
 
 /** 材質允許規則所判定的資產使用範圍。 */
 export type MaterialScope = 'vehicle' | 'environment';
@@ -29,6 +29,36 @@ export function isMaterialAllowed(
     partType !== undefined &&
     (def.allowed_part_types?.includes(partType) ?? false)
   );
+}
+
+/**
+ * 在零件資料（manifest 或物理世界的車輛規格）裡找第一個 magnetism_role 為 source 的材質 id：
+ * 逐層走訪物件與陣列，檢查每個名為 material 的字串欄位。零件不能是磁源（issue 001415），
+ * 推導、PhysicsManifest 驗證與物理世界載入以此拒收；日後新增帶材質的欄位也會被涵蓋。
+ */
+export function findMagnetSourceMaterial(
+  value: unknown,
+  materials: ReadonlyMap<string, MaterialDef> = MATERIAL_BY_ID,
+): string | null {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findMagnetSourceMaterial(item, materials);
+      if (found !== null) return found;
+    }
+    return null;
+  }
+  if (value === null || typeof value !== 'object') return null;
+  for (const [key, field] of Object.entries(value)) {
+    if (
+      key === 'material' &&
+      typeof field === 'string' &&
+      materials.get(field)?.magnetism_role === 'source'
+    )
+      return field;
+    const found = findMagnetSourceMaterial(field, materials);
+    if (found !== null) return found;
+  }
+  return null;
 }
 
 /**
