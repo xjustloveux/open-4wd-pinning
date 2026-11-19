@@ -1,5 +1,5 @@
 /**
- * materials — 全 31 種材質的程式端執行 source of truth（規格對照鍵＝id、PR review 強制同步）
+ * materials — 全 32 種材質的程式端執行 source of truth（規格對照鍵＝id、PR review 強制同步）
  * 陣列順序即 canonical 順序（UI 預設排序、跨 peer 一致）；不存 name／desc（i18n bundle 對 id 取字）
  * 載入時執行結構不變式檢查、違反即 throw（malformed 資料不得靜默通過）
  */
@@ -41,7 +41,7 @@ export interface MaterialDef {
 }
 
 const MATERIAL_LIST: readonly MaterialDef[] = [
-  // ── vehicle-friendly（14；零件與場地皆可）──
+  // ── vehicle-friendly（15；零件與場地皆可）──
   // prettier-ignore
   { id: 'abs', density: 1.05, yield_strength: 40, ultimate_strength: 50, friction: 0.4, restitution: 0.4, thermal_conductivity: 0.17, specific_heat: 1300, thermal_limit: 80, rolling_resistance: 0.95, magnetism_role: 'none', magnetic_susceptibility: null },
   // prettier-ignore
@@ -58,6 +58,8 @@ const MATERIAL_LIST: readonly MaterialDef[] = [
   { id: 'silicone', density: 1.05, yield_strength: 4, ultimate_strength: 20, friction: 0.95, restitution: 0.75, thermal_conductivity: 0.2, specific_heat: 1300, thermal_limit: 200, rolling_resistance: 1.1, magnetism_role: 'none', magnetic_susceptibility: null },
   // prettier-ignore
   { id: 'rubber', density: 1.1, yield_strength: 5, ultimate_strength: 25, friction: 1.2, restitution: 0.85, thermal_conductivity: 0.16, specific_heat: 1500, thermal_limit: 150, rolling_resistance: 1.2, magnetism_role: 'none', magnetic_susceptibility: null },
+  // prettier-ignore
+  { id: 'hard_rubber', density: 1.1, yield_strength: 10, ultimate_strength: 40, friction: 1.0, restitution: 0.6, thermal_conductivity: 0.16, specific_heat: 1500, thermal_limit: 170, rolling_resistance: 1.0, magnetism_role: 'none', magnetic_susceptibility: null },
   // prettier-ignore
   { id: 'ceramic', density: 3.5, yield_strength: 100, ultimate_strength: 200, friction: 0.65, restitution: 0.1, thermal_conductivity: 30, specific_heat: 900, thermal_limit: 1500, rolling_resistance: 0.85, magnetism_role: 'none', magnetic_susceptibility: null },
   // prettier-ignore

@@ -1,5 +1,5 @@
 /**
- * material-params — 31 種統一材質物理參數與使用規則
+ * material-params — 32 種統一材質物理參數與使用規則
  */
 export {
   MATERIALS,
