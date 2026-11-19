@@ -153,7 +153,21 @@ export interface ProxyCylinderShape {
   readonly axisLocal: Vec3;
 }
 
-/** 零件烘焙後單一 collider proxy 的來源、材質與質量。 */
+/**
+ * 零件的一塊碰撞（issue 001440）：凸包支撐點，或 tire／roller 滾動面判圓後的 cylinder。不帶質量；
+ * 材質、熱、接觸面積與磨耗由所屬節點提供。
+ */
+export interface PartColliderPiece {
+  readonly pointsM: readonly Vec3[];
+  /** 僅 hinge 零件的滾動面：derive 判圓後給出，runtime 以此建 cylinder collider 取代凸 hull。 */
+  readonly shape?: ProxyCylinderShape;
+}
+
+/**
+ * 零件烘焙後單一網格節點的物理資料（節點層，issue 001440）：材質、質量、熱與接觸面積照節點推導；
+ * 碰撞形狀放在 `colliders`，一個節點可有零到多塊。沒有碰撞塊的節點只承載質量（被同零件其他碰撞
+ * 完整包住的內件，D-20261026-01、D-20261117-01）。
+ */
 export interface PartPhysicsProxy {
   readonly nodeName: string;
   readonly sourceNodeIndex: number;
@@ -163,27 +177,30 @@ export interface PartPhysicsProxy {
   readonly thermalExchangeFactor: number;
   /** 用於限制固體表面熱交換的確定性代理投影。 */
   readonly thermalContactAreaM2: number;
+  /** 節點的六向投影面積；衝撞依量化接觸法線平滑加權。 */
+  readonly contactAreasM2: DirectionalContactAreasM2;
+  /** 僅輪胎接觸區域使用的磨耗容量；非輪胎節點不存在。 */
+  readonly wearCapacityJ?: number;
+  readonly centroidM: Vec3;
+  readonly massProperties: SourceMassProperties;
+  /** 此節點的碰撞塊；空陣列＝只承載質量。 */
+  readonly colliders: readonly PartColliderPiece[];
+}
+
+/** 武器專用且綁定穩定 proxy id 的 collider proxy（一個節點一塊，武器管線另行處理）。 */
+export interface WeaponPhysicsProxy {
+  readonly nodeName: string;
+  readonly material: MaterialId;
+  readonly massGrams: number;
   /** collider local 六向投影面積；衝撞依量化接觸法線平滑加權。 */
   readonly contactAreasM2: DirectionalContactAreasM2;
-  /** 僅輪胎接觸區域使用的磨耗容量；非輪胎代理不存在。 */
+  /** 武器 proxy 不使用；保留欄位與零件 proxy 對齊。 */
   readonly wearCapacityJ?: number;
   readonly centroidM: Vec3;
   readonly massProperties: SourceMassProperties;
   readonly pointsM: readonly Vec3[];
-  /** 僅 hinge 零件的滾動面：derive 判圓後給出，runtime 以此建 cylinder collider 取代凸 hull。 */
   readonly shape?: ProxyCylinderShape;
-  /**
-   * 僅 tire／roller：被同部件判圓外圈完整包覆的質量件（D-20261026-01）。runtime 不建 collider，
-   * 質量性質換到 hinge body frame 計入；admission 依 manifest 幾何重判、不一致即拒收。
-   */
-  readonly contact?: 'none';
 }
-
-/** 武器專用且綁定穩定 proxy id 的 collider proxy。 */
-export type WeaponPhysicsProxy = Omit<
-  PartPhysicsProxy,
-  'sourceNodeIndex' | 'thermalExchangeFactor' | 'thermalContactAreaM2' | 'contact'
->;
 
 /** 連接武器 proxy 與父剛體的烘焙 joint。 */
 export interface WeaponPhysicsJoint {

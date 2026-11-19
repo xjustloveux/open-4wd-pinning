@@ -14,12 +14,13 @@ export const PHYSICS_CCD_MAX_SUBSTEPS = 2;
 /** soft CCD 預測距離；0 明確停用 predictive constraints。 */
 export const PHYSICS_SOFT_CCD_PREDICTION_M = 0;
 /**
- * hard CCD 對持續接觸 pair 的處理（D-20261026-02、D-20261027-02）：2＝固定目標先以完整形狀求 TOI、命中另一個面
- * 才接受，否則改掃 collider 形狀質心的核心球；目標為 kinematic 或 dynamic 剛體時照父代以完整形狀求 TOI。
- * 0＝完整形狀、1＝動態目標也只掃核心球，兩者只供 kernel 有限等價驗證。原生整合參數的共識欄位，進快照並於
- * restore 驗證；30° 與核心比例是 kernel 內固定常數。
+ * hard CCD 對持續接觸 pair 的處理（D-20261026-02、D-20261027-02、D-20261119-01）：3＝固定目標先以完整形狀求
+ * TOI、命中另一個面才接受，否則改掃 collider 形狀質心的核心球；目標為 kinematic 或 dynamic 剛體時照父代以完整
+ * 形狀求 TOI，但直接 pair 在步首已有距離不超過預測距離的接觸點、且每個這樣的接觸點這一步沿法線的逼近量都不超過
+ * 預測距離時，該 pair 這一步不求 TOI。0＝完整形狀、1＝動態目標也只掃核心球、2＝沒有前述放行，三者只供 kernel 有限等價驗證。原生整合參數的
+ * 共識欄位，進快照並於 restore 驗證；30° 與核心比例是 kernel 內固定常數。
  */
-export const PHYSICS_CCD_PERSISTENT_CONTACT_POLICY = 2;
+export const PHYSICS_CCD_PERSISTENT_CONTACT_POLICY = 3;
 /**
  * Simplified（twist）接觸 normal 求解順序（D-20261027-01）：1＝與順序無關（2 點精確 2×2、3 點以上正反兩序平均，
  * 反彈同規則）；0＝逐點依 manifold 排序（父代行為），只供 kernel 有限等價驗證。原生整合參數的共識欄位，
@@ -32,12 +33,6 @@ export const PHYSICS_CONTACT_NORMAL_ORDER_POLICY = 1;
  * 12 邊形級粗面（r=16mm 時 deviation ≈ 0.55mm 起）仍判非圓＝作者意圖。
  */
 export const ROLLING_SURFACE_ROUNDNESS_EPSILON_M = 0.0005;
-/**
- * 烘焙期被包覆質量件判定容差（D-20261026-01）：tire／roller 部件中，proxy 的每個 admitted 點到
- * 判圓外圈軸線的距離 ≤ 半徑＋此值、軸向投影 ≤ 半寬＋此值即只承載質量、不建 collider。
- * 與 D-20261021-02 的同軸包含容差一致（10 µm）。
- */
-export const ENCLOSED_PROXY_TOLERANCE_M = 0.00001;
 /**
  * bounded-step 接受容差（D-20261028-05）：原生 jointConstraintErrors 的關節錨點線性誤差與旋轉表面位移
  * 都 ≤ 此值、且 CCD 查詢已判定時接受該段試算，否則還原並二分重試。兩者共用同一值；改值會改變軌跡。

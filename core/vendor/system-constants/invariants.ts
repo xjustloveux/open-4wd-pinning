@@ -281,8 +281,8 @@ export function checkInvariants(): string[] {
     'CCD substeps 必須為 1..MAX_SUBSTEPS 的整數',
   );
   assert(
-    physics.PHYSICS_CCD_PERSISTENT_CONTACT_POLICY === 2,
-    'hard CCD 持續接觸必須只對固定目標改掃核心球（D-20261026-02、D-20261027-02）',
+    physics.PHYSICS_CCD_PERSISTENT_CONTACT_POLICY === 3,
+    'hard CCD 持續接觸必須只對固定目標改掃核心球，並放行已接觸且不再逼近的動態目標（D-20261026-02、D-20261027-02、D-20261119-01）',
   );
   assert(
     physics.PHYSICS_CONTACT_NORMAL_ORDER_POLICY === 1,

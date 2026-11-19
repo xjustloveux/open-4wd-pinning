@@ -35,7 +35,51 @@ export const VEHICLE_PART_MASS_RATIO_MAX = vehicleAdmissionPolicy.vehiclePartMas
 export const PART_VERTEX_COUNT_MAX = 100_000;
 export const PART_TRIANGLE_COUNT_MAX = 100_000;
 export const PART_COLLIDER_PROXY_COUNT_MAX = 32;
-export const PART_COLLIDER_PROXY_POINT_MAX = 26;
+/** 每個碰撞 proxy 的點數上限：98 個整數支撐方向各取一點（issue 001436）。 */
+export const PART_COLLIDER_PROXY_POINT_MAX = 98;
+/**
+ * 零件碰撞覆蓋門檻（issue 001440）：碰撞表面到最近可見外觀、可見外觀到最近碰撞，兩個方向的最大距離都不得超過
+ * 「零件外框對角線 × 此比例」，再夾在下列上下限之間。
+ */
+export const PART_COLLIDER_COVERAGE_RATIO = 0.03;
+/** 零件碰撞覆蓋門檻下限（公尺）。 */
+export const PART_COLLIDER_COVERAGE_MIN_M = 0.001;
+/** 零件碰撞覆蓋門檻上限（公尺）。 */
+export const PART_COLLIDER_COVERAGE_MAX_M = 0.005;
+/**
+ * 覆蓋驗證的探測球半徑（公尺，issue 001440）：這麼大的球從外面到不了的空間（封閉空腔、比球窄的槽，以及依
+ * 零件類型視為被相鄰零件蓋住的區域），碰撞可以填實而不計誤差。
+ */
+export const PART_COLLIDER_PROBE_RADIUS_M = 0.0025;
+/**
+ * 底盤往上凸起的放寬高度（公尺，issue 001440）：外觀取樣點往正下方移動不超過這個距離後，離碰撞在覆蓋門檻
+ * 內，就視為已覆蓋。底盤上方是車殼與車內零件的位置，外界碰到底盤的方向是側面與底面，所以只放寬往上的
+ * 矮凸起；側面與底面的凸出仍照覆蓋門檻計。
+ */
+export const PART_COLLIDER_LAYERED_DROP_M = 0.006;
+/**
+ * 覆蓋量測的取樣預算（issue 001440）：以取樣點的記帳次數計。碰撞表面的每個取樣點記 1 次，外觀表面的每個取樣點
+ * 記「碰撞塊數」次，底盤的下移檢查另依「步數 × 碰撞塊數」記帳；超過即中止並記為不通過。取樣數由三角形最長邊
+ * 決定、與面積無關，所以要有上限；以次數計，各端在同一處中止，結果與機器快慢無關。記帳只涵蓋取樣迴圈，參考
+ * 實體的建立與每次距離查詢內部的三角形比對不在內，所以不是整體工作量或時間的上限。底盤與車殼另有一條中止條件：
+ * 留給細桿分區的露出取樣點超過 50 萬個時同樣中止並記為不通過。
+ */
+export const PART_COLLIDER_COVERAGE_EVALUATION_MAX = 20_000_000;
+/**
+ * 各類零件的碰撞塊上限（issue 001440）：編輯器拆塊加到這個數量為止，到上限仍蓋不住外觀就不通過覆蓋驗證。
+ * 車殼造型變化多、武器種類多，留給創作的空間較大；效能由創作者與組裝的玩家自行衡量，整車不另設合計上限。
+ * 輪胎、導輪與車內零件各一塊。
+ */
+export const PART_COLLIDER_PIECE_MAX = Object.freeze({
+  chassis: 10, // 底板、前後保桿與側向凸出
+  body: 12, // 造型變化多
+  weapon: 15, // 種類多
+  battery: 1, // 整顆零件一塊凸包
+  motor: 1, // 整顆零件一塊凸包
+  chip: 1, // 整顆零件一塊凸包
+  tire: 1, // 判圓 cylinder 或保角凸包
+  roller: 1, // 判圓 cylinder 或保角凸包
+});
 export const PART_AABB_MIN_M = Object.freeze([0.001, 0.001, 0.001]) as readonly [
   number,
   number,

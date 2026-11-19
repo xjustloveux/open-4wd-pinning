@@ -392,7 +392,7 @@
     {
       "path": "interfaces/physics.ts",
       "upstream": "src/interfaces/physics.ts",
-      "sha256": "17034ed8a2a42f4cbb8ea9b623ca158445d75863c7f0c674c1c14da8cd0851e4"
+      "sha256": "bc3f81b19a91141633529e7bf457e2254576d53890f264cb46a65c029962ce7a"
     },
     {
       "path": "interfaces/asset-storage.ts",
@@ -452,7 +452,7 @@
     {
       "path": "system-constants/invariants.ts",
       "upstream": "src/system-constants/invariants.ts",
-      "sha256": "2e7f094a844118a936e5284d1811eef04d7bc01c7e291425427eac38119b9a31"
+      "sha256": "fcacde52dc0a7d111155e7e94dd82b830d8a1f837fb9e8795434ecfa2bdce603"
     },
     {
       "path": "system-constants/protocol/index.ts",
@@ -462,12 +462,12 @@
     {
       "path": "system-constants/protocol/physics.ts",
       "upstream": "src/system-constants/protocol/physics.ts",
-      "sha256": "18984239329d16adbe691e4001e7b9a9657d9677cd198b7d43046945f17d194d"
+      "sha256": "631efabc6b796e4bd72c628101c5a625d996063a102736b51dcb8803b1d5c8b3"
     },
     {
       "path": "system-constants/protocol/ugc.ts",
       "upstream": "src/system-constants/protocol/ugc.ts",
-      "sha256": "b5690e1f59b039c15f450125702422c54812fd4a4e486fd80a4f1c03881b2ae6"
+      "sha256": "e1562fc848747e97eccc40d31bc7502252e6ed22f49e696313476a66cde2841b"
     },
     {
       "path": "system-constants/protocol/vehicle-admission-policy.json",
@@ -492,7 +492,7 @@
     {
       "path": "system-constants/protocol/matchmaking.ts",
       "upstream": "src/system-constants/protocol/matchmaking.ts",
-      "sha256": "7bd12654fb85bb1821368fcbbdfe11fb6e6e6865a83a263de3d5b81d3496e518"
+      "sha256": "c8316fdc3d427bc49c4175424c20a8963f95bcaea8af29373a6ef2df79cad313"
     },
     {
       "path": "system-constants/protocol/trueskill-vw-table.ts",
@@ -532,7 +532,7 @@
     {
       "path": "system-constants/network/versioning.ts",
       "upstream": "src/system-constants/network/versioning.ts",
-      "sha256": "8a363ca5ae6c97fab44395c317b8ad8ba3aca81735bb871a16785234b4b44474"
+      "sha256": "69450c0ce4884293930aee2d2d89ed4e44b3fcfd8aeb1a2e0cb3bc718e004596"
     },
     {
       "path": "system-constants/network/perf.ts",
@@ -747,7 +747,7 @@
     {
       "path": "material-params/index.ts",
       "upstream": "src/material-params/index.ts",
-      "sha256": "690b7d0756428852cdf190e08f9c622cf33d1611f19c9561ed9a8197bfc33435"
+      "sha256": "45a65251ff32bbeca708aace11d8cb92fe4a0f85cd23d6830b0ea8e1bbac7196"
     },
     {
       "path": "material-params/material-i18n.ts",
@@ -757,7 +757,7 @@
     {
       "path": "material-params/materials.ts",
       "upstream": "src/material-params/materials.ts",
-      "sha256": "d56f63c2b694b94e49b956b1b8a17609dea94148e8dd3eb9bb84a489fd1c8310"
+      "sha256": "22a441ce3f9a14e55c1977e3ccee935bd7eac5c6b863135fa85f9b1142224bee"
     },
     {
       "path": "material-params/material-rules.ts",

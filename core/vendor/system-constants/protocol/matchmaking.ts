@@ -12,6 +12,11 @@ export const READY_COUNTDOWN_SEC = 5;
 /** quick match discovery 等待既有公開房出現的 client policy 上限。 */
 export const QUICK_MATCH_TIMEOUT_MS = 120_000;
 export const PLAYERS_PER_RACE_MIN = 2;
+/**
+ * 房主可選的每車碰撞塊上限；房間的上限為其中一個值或 null（不限）。
+ * 上限針對輪替內的每一台車個別檢查，不是全房合計；各端以同一份零件物理資料算出每車塊數後自行把關。
+ */
+export const ROOM_VEHICLE_COLLIDER_PIECE_MAX_OPTIONS: readonly number[] = [30, 40, 50];
 // ── TrueSkill＝共識 derive → 全整數定點（μσ X1000）；FFA 不平手＝draw margin 0、無平手常數 ──
 export const TRUESKILL_MU_INITIAL_X1000 = 25_000;
 export const TRUESKILL_SIGMA_INITIAL_X1000 = 8_333;
