@@ -1,0 +1,64 @@
+groups:
+  - name: open4wd-pinning-app
+    rules:
+      - alert: Open4wdPinningApiErrorBurst
+        expr: >-
+          sum(increase(open4wd_pinning_api_requests_total{status_class="5xx"}[10m])) > 5
+          and sum(increase(open4wd_pinning_api_requests_total[10m])) > 50
+        for: 10m
+        keep_firing_for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Open4WD pinning API 持續出現 5xx
+          description: 10 分鐘至少 50 次請求且 5xx 超過 5 次，並持續 10 分鐘。
+
+      - alert: Open4wdPinningClusterOperationErrors
+        expr: >-
+          sum(increase(open4wd_pinning_cluster_operations_total{outcome="error"}[15m])) > 3
+          and sum(increase(open4wd_pinning_cluster_operations_total[15m])) > 10
+        for: 10m
+        keep_firing_for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Open4WD pinning app 對 Cluster 的操作持續失敗
+          description: 15 分鐘至少 10 次操作且錯誤超過 3 次，並持續 10 分鐘。
+
+      - alert: Open4wdPinningDmcaSweepError
+        expr: >-
+          sum(increase(open4wd_pinning_dmca_sweeps_total{outcome="error"}[30m])) >= 1
+          and sum(increase(open4wd_pinning_dmca_sweeps_total[30m])) >= 1
+        for: 5m
+        keep_firing_for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Open4WD DMCA 定期掃描失敗
+          description: 最近一次可觀察的 DMCA sweep 失敗；請檢查案卷儲存與 Cluster。
+
+      - alert: Open4wdPinningKuboStorageHigh
+        expr: >-
+          (open4wd_pinning_repo_size_bytes / open4wd_pinning_storage_max_bytes) > 0.8
+          and count_over_time(open4wd_pinning_repo_size_bytes[10m]) >= 3
+          and count_over_time(open4wd_pinning_storage_max_bytes[10m]) >= 3
+        for: 10m
+        keep_firing_for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Open4WD pinning Kubo repo 已超過 StorageMax 的 80%
+          description: Kubo repo 水位至少 3 次 scrape 高於 80%，且持續 10 分鐘；請檢查 GC 與實體 volume headroom。
+
+      - alert: Open4wdPinningGlobalQuotaHigh
+        expr: >-
+          (open4wd_pinning_quota_global_used_bytes / open4wd_pinning_quota_global_limit_bytes) > 0.8
+          and count_over_time(open4wd_pinning_quota_global_used_bytes[10m]) >= 3
+          and count_over_time(open4wd_pinning_quota_global_limit_bytes[10m]) >= 3
+        for: 10m
+        keep_firing_for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Open4WD pinning global quota 已使用超過 80%
+          description: Provider-global unique referenced block 用量至少 3 次 scrape 高於 80%，且持續 10 分鐘。

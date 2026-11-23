@@ -1,0 +1,16 @@
+# EXAMPLE ONLY：這不是公版預設，也不是所有 deployment 的建議值。
+# 先依 deploy/sizing/README.md 量測你的流量、pinset 與 DAG，再複製成 compose.resources.yml 調整：
+# docker compose -f docker-compose.yml -f compose.resources.yml up -d
+services:
+  app:
+    cpus: '2'
+    mem_limit: 4g
+  kubo:
+    cpus: '2'
+    mem_limit: 4g
+    environment:
+      # 必須低於容器 memory limit；這限制整個 Go process，不等同 libp2p ResourceMgr。
+      - GOMEMLIMIT=3GiB
+  cluster:
+    cpus: '1'
+    mem_limit: 1g

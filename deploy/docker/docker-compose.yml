@@ -1,0 +1,114 @@
+# 單機自架路徑。三服務對齊設計文件的三容器職責：app（本 repo 自建 image）／kubo／cluster
+# （上游發布的 image，僅動 tag 即可跟安全更新）。啟動前請先完成 README「設定」章節——至少要有
+# 一份填好的 config.yaml（含 LEDGER_DB_ADDRESS、GENESIS_TIMESTAMP）與 CLUSTER_SECRET。
+name: open4wd-pinning
+
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    ports:
+      - '8000:8000'
+      - '4001:4001'
+    expose:
+      - '9464' # private metrics；不 publish 到 host，監控容器需同 network
+    environment:
+      - DATA_DIR=/app/data
+      # 這兩個是本檔「各服務各自網路命名空間、以服務名 DNS 互連」拓撲下的固定值，不留給
+      # config.yaml／shell 覆寫（deploy/k8s 走單 pod 共用 localhost 拓撲，內建預設值本身就對，
+      # 不需要對應的覆寫）。
+      - CLUSTER_API_URL=http://cluster:9094
+      - KUBO_API_URL=http://kubo:5001
+      # 其餘設定的主要管道是下面掛入的 config.yaml。以下全部留白名（bare，無 = 值）：你的
+      # shell 或本檔同目錄的 .env 若有同名變數才會覆寫該檔設定；完全沒設就不會注入進容器
+      # （不會用空字串蓋掉 config.yaml 裡已經填好的值）。
+      - LEDGER_DB_ADDRESS
+      - GENESIS_TIMESTAMP
+      - GOVERNANCE_SIGNERS
+      - CORS_ALLOWED_ORIGINS
+      - BOOTSTRAP_PEER_PRIVKEY
+      - RELAY_ENABLE
+      - AUTHORIZED_SIGNERS
+      - REPUTATION_THRESHOLD
+      - QUOTA_PER_SIGNER_MAX_PINS
+      - QUOTA_PER_SIGNER_MAX_SIZE_GB
+      - QUOTA_GLOBAL_MAX_SIZE_TB
+      - RATE_LIMIT_CAPACITY
+      - RATE_LIMIT_REFILL_PER_SEC
+      - PROVIDER_UGC_READ_ENABLE
+      - PROVIDER_UGC_WRITE_ENABLE
+      - PROVIDER_TRANSPARENCY_ENABLE
+      - DMCA_ENABLE
+      - DMCA_DESIGNATED_AGENT_REGISTRATION
+      - DMCA_ADMIN_TOKEN
+      - DMCA_ADMIN_OPERATOR_ID
+      - DMCA_ADMIN_DOCS_ENABLE
+      - DMCA_TRUST_CLOUDFLARE_ACCESS_IDENTITY
+      - SMTP_URL
+      - DMCA_AGENT_EMAIL
+      - METRICS_ENABLE
+      - METRICS_HOST
+      - METRICS_PORT
+    volumes:
+      - app-data:/app/data
+      # 從 config/config.example.yaml 複製一份到 repo 根的 config/config.yaml 再填值（README
+      # 有步驟）；掛到容器內 config/ 的預設解析路徑，不需另外設 CONFIG_PATH。
+      - ../../config/config.yaml:/app/config/config.yaml:ro
+    depends_on:
+      kubo:
+        condition: service_healthy
+      cluster:
+        condition: service_healthy
+    restart: unless-stopped
+
+  kubo:
+    image: ipfs/kubo:v0.42.0
+    environment:
+      # 只有設了固定身分（BOOTSTRAP_PEER_ID，app 那把 BOOTSTRAP_PEER_PRIVKEY 對應的公開
+      # PeerId）才會設定 Peering——見 kubo-init.d/10-peering.sh。
+      - BOOTSTRAP_PEER_ID
+      - KUBO_PEERING_APP_MULTIADDR=/dns4/app/tcp/4001/ws
+      # 預設容量關係：app global quota 64 GiB < Kubo 80 GB < 實際 volume；放大／縮小時三者
+      # 必須一起調整並保留 repo metadata／GC headroom。
+      - KUBO_STORAGE_MAX=${KUBO_STORAGE_MAX:-80GB}
+      # 受控 provider 的 Kubo 固定不加入 public DHT；若 operator 另開 generic IPFS 節點，
+      # 那是本服務 policy／descriptor 之外的獨立供應面，不得共用這個部署角色。
+      - KUBO_ROUTING_TYPE=none
+    volumes:
+      - ipfs-data:/data/ipfs
+      - ./kubo-init.d:/container-init.d:ro
+    healthcheck:
+      test: ['CMD', 'ipfs', '--api', '/ip4/127.0.0.1/tcp/5001', 'id']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    restart: unless-stopped
+
+  cluster:
+    image: ipfs/ipfs-cluster:v1.1.6
+    depends_on:
+      kubo:
+        condition: service_healthy
+    environment:
+      - CLUSTER_SECRET=${CLUSTER_SECRET:?請以「openssl rand -hex 32」產生後填入（README 設定章節）；單節點也建議設定好，日後加入節點時不必重置}
+      - CLUSTER_PEERNAME=open-4wd-pinning
+      - IPFS_CLUSTER_CONSENSUS=crdt
+      - CLUSTER_IPFSHTTP_NODEMULTIADDRESS=/dns4/kubo/tcp/5001
+      - CLUSTER_RESTAPI_HTTPLISTENMULTIADDRESS=/ip4/0.0.0.0/tcp/9094
+      - CLUSTER_CRDT_TRUSTEDPEERS=*
+    volumes:
+      - cluster-data:/data/ipfs-cluster
+    healthcheck:
+      test: ['CMD', 'ipfs-cluster-ctl', '--host', '/ip4/127.0.0.1/tcp/9094', 'id']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  app-data:
+  ipfs-data:
+  cluster-data:

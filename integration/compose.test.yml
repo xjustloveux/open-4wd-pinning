@@ -1,0 +1,65 @@
+# 整合測試專用 compose——只起 kubo＋cluster 兩顆真服務，供
+# integration/pin-flow.integration.spec.ts 對外打埠映射測試；不含 app 容器（那是
+# deploy/docker/docker-compose.yml 正式部署的範疇，兩份各自獨立維護，互不依賴）。
+#
+# 生命週期由 spec 檔的 beforeAll／afterAll 自行 `docker compose -f integration/compose.test.yml
+# up -d --wait` / `down --volumes`——本機只要 docker daemon 有在跑就會自動起停，不必手動
+# `up` 一次；CI（cicd.yml）沿用同一份檔案跑同一支 spec，daemon 在 runner 上恆可用，故那邊
+# 是「必跑」而非可 SKIP（describe.skipIf 只判斷 daemon／compose 可不可用，見 spec 檔開頭）。
+#
+# 埠故意選不常見的固定測試埠段（15001／19094），不是 kubo／cluster 的慣用預設埠
+# （5001／9094）——避開開發者本機可能已經在跑的一套「正牌」kubo／cluster 撞埠；可用下面
+# 三個 INTEGRATION_*_PORT 環境變數整組覆寫，spec 檔讀同一組變數、預設值兩邊保持一致（見該檔
+# 開頭的埠常數）。全部只綁 127.0.0.1，不對區網／外網開放。
+#
+# 不宣告任何具名或掛載 volume：每次 `up` 都是全新、空白的 kubo repo／cluster state，
+# `down --volumes` 收尾一併清掉匿名 volume——測試不需要跨次執行保留狀態，刻意保持每輪
+# 全新起跑，降低「上一輪殘留狀態污染這一輪斷言」的風險。
+name: open4wd-pinning-integration-test
+
+services:
+  kubo:
+    image: ipfs/kubo:v0.42.0
+    ports:
+      - '127.0.0.1:${INTEGRATION_KUBO_API_PORT:-15001}:5001'
+    healthcheck:
+      # 官方 image 的啟動腳本（bin/container_daemon）每次啟動都會把 Addresses.API 覆寫回
+      # 0.0.0.0:5001（不管 init 當下套的是哪個 profile），讓 cluster 容器能以服務名連過來；
+      # 健檢在容器「自己內部」執行，明講 127.0.0.1 而非依賴 0.0.0.0 在 Linux 下等於 loopback
+      # 這個作業系統層級的隱性行為，讀起來意圖更直接。
+      test: ['CMD', 'ipfs', '--api', '/ip4/127.0.0.1/tcp/5001', 'id']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
+  cluster:
+    image: ipfs/ipfs-cluster:v1.1.6
+    depends_on:
+      kubo:
+        condition: service_healthy
+    environment:
+      # 固定測試值（32 bytes、全 0xff）——只給這個一次性 compose 專案的單節點用，不是任何
+      # 生產密鑰。CRDT 共識下這把密鑰只用來認證「跟其他 peer」的 pubsub 往來；單節點沒有其他
+      # peer 可認證，REST API 呼叫本身完全不吃這把密鑰——純粹是 `ipfs-cluster-service init`
+      # 介面需要給一個值，給固定值是為了讓每次 up 起來的節點身分可重現、方便對照 log。
+      CLUSTER_SECRET: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+      CLUSTER_PEERNAME: open4wd-pinning-integration-test
+      IPFS_CLUSTER_CONSENSUS: crdt
+      # kubo 服務在同一個 compose 專案的預設網路內以服務名解析（Docker 內建 DNS），與正式
+      # 部署 compose／k8s 的 CLUSTER_IPFSHTTP_NODEMULTIADDRESS 同一寫法。
+      CLUSTER_IPFSHTTP_NODEMULTIADDRESS: /dns4/kubo/tcp/5001
+      # 不依賴 ipfs-cluster-service init 未寫明的預設值，明講成 0.0.0.0——host 的埠映射與
+      # 健檢都要打得到這個位址。
+      CLUSTER_RESTAPI_HTTPLISTENMULTIADDRESS: /ip4/0.0.0.0/tcp/9094
+      # 比照正式部署 compose／k8s 的 CLUSTER_CRDT_TRUSTEDPEERS；單節點下沒有其他 peer
+      # 可信不信、本身無作用，保留只是讓這份測試組態與正式設定同形。
+      CLUSTER_CRDT_TRUSTEDPEERS: '*'
+    ports:
+      - '127.0.0.1:${INTEGRATION_CLUSTER_API_PORT:-19094}:9094'
+    healthcheck:
+      test: ['CMD', 'ipfs-cluster-ctl', '--host', '/ip4/127.0.0.1/tcp/9094', 'id']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s

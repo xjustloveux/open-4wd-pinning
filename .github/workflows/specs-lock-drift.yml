@@ -1,0 +1,60 @@
+# 每週比對 cicd.yml 釘定的 specs commit 與 specs master：只對「pinning 消費的 specs 路徑」（rules.json 與
+# 執行的 scripts/check-trace.mjs；rule-contracts.json 是 rules.json 的生成來源、其餘 scripts/ 是 specs 自身工具，不列）
+# 的差異發 warning 與 job summary，不阻斷任何流程；改鎖與否由維護者依 specs 變更類型決定。
+name: specs-lock-drift
+
+on:
+  schedule:
+    - cron: '23 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Read the specs commit pinned by cicd.yml
+        id: specs-lock
+        run: |
+          commit="$(grep -m1 -oE 'ref: [0-9a-f]{40}' .github/workflows/cicd.yml | cut -d' ' -f2)"
+          test -n "$commit"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+      # 只 checkout 釘定的 immutable commit（帶完整歷史以計算落後筆數）；master 用 git fetch 取得，不 checkout 浮動分支。
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: xjustloveux/open-4wd-specs
+          ref: ${{ steps.specs-lock.outputs.commit }}
+          path: .ci/open-4wd-specs
+          lfs: false
+          fetch-depth: 0
+      - name: Report consumed drift (non-blocking)
+        env:
+          LOCK_COMMIT: ${{ steps.specs-lock.outputs.commit }}
+        run: |
+          cd .ci/open-4wd-specs
+          git fetch --no-tags origin master
+          behind="$(git rev-list --count "$LOCK_COMMIT..FETCH_HEAD")"
+          changed="$(git -c core.quotepath=false diff --name-status "$LOCK_COMMIT" FETCH_HEAD -- rules.json scripts/check-trace.mjs)"
+          {
+            echo "## specs lock drift"
+            echo "- lock commit: \`$LOCK_COMMIT\`"
+            echo "- behind master by: $behind commit(s)"
+            if [ -n "$changed" ]; then
+              echo "- consumed paths changed:"
+              echo
+              echo '```'
+              echo "$changed"
+              echo '```'
+              echo
+              echo "被消費的 specs 內容已前進：請依 specs 變更類型決定是否更新 cicd.yml 的釘定 commit。"
+            else
+              echo "- consumed paths changed: none（不需改鎖）"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$changed" ]; then
+            echo "::warning title=specs lock drift::consumed specs paths changed since $LOCK_COMMIT (behind $behind); see the job summary"
+          fi

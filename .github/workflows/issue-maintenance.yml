@@ -1,0 +1,28 @@
+name: Issue maintenance
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+  schedule:
+    - cron: '23 17 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: issue-maintenance-${{ github.event.issue.number || 'stale-sweep' }}
+  cancel-in-progress: false
+
+jobs:
+  maintain:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate or age needs-info issues
+        run: node scripts/issue-maintenance.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

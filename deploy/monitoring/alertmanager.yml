@@ -1,0 +1,14 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: operator-selected
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  # 公版不選通知供應商。營運者須在 fork 的私有 overlay 為此 receiver 加入
+  # webhook_configs、email_configs 或其他 integration，並以測試 alert 驗證送達。
+  - name: operator-selected

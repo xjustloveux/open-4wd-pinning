@@ -1,0 +1,113 @@
+# open-4wd pinning service 設定範例
+#
+# 複製為 config.yaml（或以 CONFIG_PATH 環境變數指向其他路徑）後填入實際值。
+# 每個欄位都可用對應的環境變數覆蓋；解析優先序＝環境變數 > 本檔 yaml > 內建預設。
+# 數值欄位非法（非數字／零／負值）時退回下一層；DMCA_ENABLE 採嚴格字串比對（恰為 "true" 才啟用）。
+
+# 管理 API 埠（env: PORT）
+port: 8000
+
+# 瀏覽器跨來源 API allowlist（env: CORS_ALLOWED_ORIGINS，逗號分隔）。
+# 必須明示完整 origin（scheme + host + 選填 port）；不接受 *、path、query、fragment 或 credentials。
+# 空清單＝fail-closed（同源與非瀏覽器 server-to-server 呼叫仍正常）。
+cors_allowed_origins: []
+# 例如：
+# cors_allowed_origins:
+#   - https://play.example.org
+
+# 本地資料根目錄：blockstore／datastore／orbitdb／dmca-notices 各自落在其下子目錄（env: DATA_DIR）
+# 這是正常 replica/service 目錄；不得與一次性 ledger:genesis 的 GENESIS_DATA_DIR 共用。
+data_dir: ./data
+
+# 帳本 OrbitDB 位址（env: LEDGER_DB_ADDRESS）——必填；缺席即拒絕啟動。
+# 需與主網部署值一致；格式為 /orbitdb/<CIDv1-base58btc>。
+# 新網路先依 Specs「部署資訊/open-4wd-pinning.md §3.4」的 one-shot genesis runbook
+# 產生 public receipt，再把 exact address 填在此處；
+# 正常 service 沒有 genesis toggle，也不會 fallback 到 database name。
+ledger_db_address: /orbitdb/REPLACE_WITH_REAL_LEDGER_ADDRESS
+
+# 帳本 ordinary genesis 的 UTC 毫秒（env: GENESIS_TIMESTAMP）——必填。
+# 直接複製 one-shot public receipt 的 genesisTimestamp，不可用本機啟動時間代替。
+genesis_timestamp: REPLACE_WITH_RECEIPT_GENESIS_TIMESTAMP
+
+# 治理 trust root（env: GOVERNANCE_SIGNERS，逗號分隔）——checkpoint 多簽採納授權 signer set 的 PeerId 清單。
+# 需與主網部署的治理 signer set 一致，才能驗證並採納遠端 checkpoint announcement、驅動自動 pin。
+# 留空＝fail-closed：自動 pin 停用（本地無法提案、遠端 announcement 拒收），授權 pin API 仍可運作。
+governance_signers: []
+
+# libp2p 監聽位址（env: LISTEN_WS，逗號分隔）；TLS 由 ingress／反代終止成 wss。
+listen_ws:
+  - /ip4/0.0.0.0/tcp/4001/ws
+
+# 額外 bootstrap 節點 multiaddr（env: BOOTSTRAP，逗號分隔）
+bootstrap: []
+
+# circuit relay server 開關（env: RELAY_ENABLE）；給嚴格 NAT 的瀏覽器保留中繼 slot。
+relay_enabled: true
+
+# IPFS Cluster REST API（env: CLUSTER_API_URL）
+cluster_api_url: http://127.0.0.1:9094
+
+# kubo RPC API（env: KUBO_API_URL）
+kubo_api_url: http://127.0.0.1:5001
+
+# 授權：白名單 ∪ 信譽閾值（兩者皆空＝拒絕所有 API pin；自動 pin 不受影響）。
+auth:
+  # 靜態白名單 PeerId（env: AUTHORIZED_SIGNERS，逗號分隔）
+  authorized_signers: []
+  # 信譽達標即自動授權的門檻（env: REPUTATION_THRESHOLD）；留空＝停用信譽授權模式。
+  # reputation_threshold: 650
+
+# 配額上限（env: QUOTA_PER_SIGNER_MAX_PINS／QUOTA_PER_SIGNER_MAX_SIZE_GB／QUOTA_GLOBAL_MAX_SIZE_TB）。
+# auto pin（checkpoint 等系統性內容）只計入 global、不佔任何 signer 的個人配額；global 是
+# 所有 Cluster roots 引用的唯一 block bytes，啟動時由 Cluster＋Kubo 重建，非 root metadata 加總。
+# 範本關係為 0.0625 TiB（64 GiB）app quota < 80 GB Kubo StorageMax < 100 Gi volume；
+# 修改時三者必須一起調整，並替 Kubo repo metadata、暫存與 GC 保留 headroom。
+quotas:
+  per_signer_max_pins: 10000
+  per_signer_max_size_gb: 50
+  global_max_size_tb: 0.0625
+
+# 每 IP token bucket 限流（env: RATE_LIMIT_CAPACITY／RATE_LIMIT_REFILL_PER_SEC）。
+rate_limit:
+  capacity: 20
+  refill_per_sec: 1
+
+# 驗章後依 signer 身分計算；與上面的 per-IP 桶同時生效，避免換 IP 繞過。
+signer_rate_limit:
+  capacity: 20
+  refill_per_sec: 1
+
+# 公開 provider descriptor 的 UGC 能力；與下方 DMCA 模組完全獨立。
+provider:
+  ugc_read_enabled: true # env: PROVIDER_UGC_READ_ENABLE；控制 root-scoped /api/ugc/*
+  ugc_write_enabled: true # env: PROVIDER_UGC_WRITE_ENABLE；false 只關閉 /pin，不關閉 /unpin
+  transparency_enabled: true # env: PROVIDER_TRANSPARENCY_ENABLE；DMCA 啟用時是否公開聚合統計
+  # 選填公開政策連結；只接受無 credentials/query/fragment 的 HTTPS URL。
+  policies:
+    # ugc: https://pin.example/policies/ugc          # env: PROVIDER_POLICY_UGC_URL
+    # legal: https://pin.example/policies/legal      # env: PROVIDER_POLICY_LEGAL_URL
+    # privacy: https://pin.example/policies/privacy  # env: PROVIDER_POLICY_PRIVACY_URL
+    # retention: https://pin.example/policies/retention # env: PROVIDER_POLICY_RETENTION_URL
+
+# 私有 Prometheus listener（預設關閉；env: METRICS_ENABLE／METRICS_HOST／METRICS_PORT）。
+# 不要與公開管理 API 共用 ingress；由營運者自己的 private Prometheus 抓取。
+metrics:
+  enabled: false
+  host: 127.0.0.1
+  port: 9464
+
+# DMCA notice 模組（預設關；只允許開在單一實例）。
+dmca:
+  enable: false
+  designated_agent_registration: not-declared # env: DMCA_DESIGNATED_AGENT_REGISTRATION
+  admin_docs_enabled: false # env: DMCA_ADMIN_DOCS_ENABLE；self-host Swagger，預設關閉
+  # admin_token: ...       # env: DMCA_ADMIN_TOKEN；enable=true 時必填，缺席拒絕啟動
+  # admin_operator_id: ... # env: DMCA_ADMIN_OPERATOR_ID；寫入裁決稽核紀錄的部署端標籤
+  # trust_cloudflare_access_identity: false # env: DMCA_TRUST_CLOUDFLARE_ACCESS_IDENTITY；
+  # 僅在 origin 只接受 Tunnel/Access 時設 true，採用 Cloudflare 注入的 email 作 operatorId
+  # smtp_url: ...          # env: SMTP_URL；Notice 確認信與反通知轉寄；未設時交付失敗
+  # agent_email: ...       # env: DMCA_AGENT_EMAIL；私有維運提醒收件人
+  delivery_retry_base_ms: 60000 # env: DMCA_DELIVERY_RETRY_BASE_MS
+  delivery_retry_max_ms: 86400000 # env: DMCA_DELIVERY_RETRY_MAX_MS
+  business_day_holidays: [] # env: DMCA_BUSINESS_DAY_HOLIDAYS，YYYY-MM-DD 逗號分隔

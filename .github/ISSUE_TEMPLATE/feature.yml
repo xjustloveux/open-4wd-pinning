@@ -1,0 +1,67 @@
+name: Feature request
+description: Propose an Open4WD improvement or new capability
+title: '[Feature]: '
+labels:
+  - type/feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing an idea. This is a solo hobby project, so acknowledgement and evaluation may take several days, and submission does not guarantee adoption or a delivery date. General questions and early discussion belong in Discussions.
+  - type: dropdown
+    id: impact_scope
+    attributes:
+      label: Impact scope
+      description: Choose the broad area most affected by the proposal.
+      options:
+        - Application or gameplay
+        - Content creation or tools
+        - Networking or service deployment
+        - Documentation or specifications
+        - Other or uncertain
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: Describe the user need before describing a solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed outcome
+      description: Explain the behavior or outcome you would like.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe current workarounds or other approaches you considered.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Expected impact
+      description: Identify affected users, compatibility concerns, or operational cost.
+    validations:
+      required: true
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Add mockups, examples, or public-safe references if useful.
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmation
+      options:
+        - label: I searched existing issues and Discussions for similar requests.
+          required: true
+        - label: I understand that submission does not promise acceptance or a delivery date.
+          required: true

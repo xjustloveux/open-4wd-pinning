@@ -1,0 +1,66 @@
+# Node
+/node_modules
+npm-debug.log
+pnpm-debug.log*
+
+# Build output
+/dist
+*.tsbuildinfo
+
+# Python bytecode cache
+__pycache__/
+*.py[cod]
+
+# Environment
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# 憑證／金鑰檔與本機 kubeconfig：deploy workflow 只在 runner 暫存並於收尾刪除；本機比照操作時不得入庫
+*.pem
+*.key
+*.p12
+*.pfx
+/kubeconfig
+
+# Deployer config & runtime data (config.yaml may hold SMTP URL / admin token; /data is runtime state)
+config/config.yaml
+/data
+
+# IDEs and editors
+.idea/
+.vscode/
+/.superpowers/
+/docs/superpowers/
+
+# 本機 agent workflow 接線：.claude/.agents 下的 skill 目錄是指向工作區 open-4wd-workflow
+# repo 的 Windows junction，Git on Windows 會當一般目錄走訪——未忽略即整包外部檔案入庫。
+# 規則放這裡而非 .git/info/exclude：後者不隨 clone 移動，.git 一旦重建即失效。
+/AGENTS.override.md
+/CLAUDE.local.md
+/.agents/skills/open-4wd-workflow/
+/.agents/skills/graphify/
+/.claude/skills/open-4wd-workflow/
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Test / coverage
+/coverage
+# cicd.yml 整合測試步驟的 vitest JSON 報告（本機等價執行時也會寫出）
+/.integration-result.json
+
+# Local administrative exports
+/dmca-export-*.bin
+
+# graphify 知識圖：大圖／報告／HTML 不入版控（可隨時重生成）；
+# 語意 cache＋manifest＋labels 入版控＝任何 clone 0 token 重建（掃描白名單見 .graphifyignore）
+/graphify-out/*
+!/graphify-out/cache/
+/graphify-out/cache/*
+!/graphify-out/cache/semantic/
+!/graphify-out/manifest.json
+!/graphify-out/.graphify_labels.json
+/graphify-release/

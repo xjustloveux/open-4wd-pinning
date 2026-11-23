@@ -1,0 +1,42 @@
+# 只把 app API（:8000）公開。Kubo RPC／gateway 留在 pod 內部，UGC 讀取必須經 app 的
+# root-scoped `/api/ugc/<root>/blocks/<cid>` policy gate；不得以 `/ipfs/<cid>` 旁路。
+#
+# libp2p 的 wss（app :4001，瀏覽器 client 的 bootstrap 連線口）刻意不寫進這份標準 Ingress：
+# 它是原始 TCP／WebSocket upgrade 直通、不是路徑可分辨的一般 HTTP 語意，而「同一個 443、同一
+# 個網域，把特定埠直通到後端」在不同 ingress controller 之間沒有可攜寫法（例如 nginx-ingress
+# 要另外在 controller 自己的 tcp-services ConfigMap 註冊、不是這份 per-app Ingress schema
+# 表達得了的東西；Traefik 則是完全不同的 IngressRouteTCP CRD）。三種可行路線，依你的 ingress
+# controller 擇一：
+#   1. nginx-ingress：在 ingress-nginx 這個 controller 自己的 tcp-services ConfigMap 加一行
+#      "4001": "<namespace>/open4wd-pinning:4001"，並在 controller 的 Service 開 4001 這個
+#      port——沿用同一個網域＋443 對外時常見的作法，但要另外動 controller 層設定，不在本檔範圍。
+#      TLS 由 controller 的 TCP passthrough 邊界終止。
+#   2. 獨立 LoadBalancer／NodePort Service 直曝 4001（另一個 Service 資源，非本檔內容）：
+#      不與 443 共用網域，libp2p bootstrap multiaddr 另立一個埠／子網域即可，設定最單純。
+#   3. Traefik／其他 controller：查該 controller 的 TCP/UDP IngressRoute 文件。
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: open4wd-pinning
+  annotations:
+    # 依實際 ingress controller 調整；此處以 nginx-ingress 為例。wss 走前述路線 1 時，這兩個
+    # timeout 也建議拉長——libp2p ws 連線長駐，預設值容易把閒置連線提前切斷。
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '3600'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '3600'
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - REPLACE_WITH_DOMAIN
+      secretName: open4wd-pinning-tls
+  rules:
+    - host: REPLACE_WITH_DOMAIN
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: open4wd-pinning
+                port:
+                  name: api
